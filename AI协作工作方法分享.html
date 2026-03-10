@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI协作工作方法分享</title>
+    <style>
+        :root {
+            --dark: #333333;
+            --blue: #2979FF;
+            --orange: #FF6D00;
+            --gray: #777777;
+            --light: #F5F5F5;
+            --border: #E0E0E0;
+            --slide-w: 1280px;
+            --slide-h: 720px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+            background: #E8E8E8;
+            overflow-x: hidden;
+            padding: 40px 0;
+        }
+
+        /* === Slide wrapper: fixed 16:9 card centered === */
+        .slide-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+
+        .slide {
+            width: var(--slide-w);
+            height: var(--slide-h);
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 64px 80px;
+        }
+
+        /* Page number */
+        .slide::after {
+            position: absolute;
+            bottom: 24px;
+            right: 36px;
+            font-size: 13px;
+            color: #bbb;
+            letter-spacing: 1px;
+        }
+
+        .slide-wrapper:nth-child(1) .slide::after {
+            content: "01 / 13";
+        }
+
+        .slide-wrapper:nth-child(2) .slide::after {
+            content: "02 / 13";
+        }
+
+        .slide-wrapper:nth-child(3) .slide::after {
+            content: "03 / 13";
+        }
+
+        .slide-wrapper:nth-child(4) .slide::after {
+            content: "04 / 13";
+        }
+
+        .slide-wrapper:nth-child(5) .slide::after {
+            content: "05 / 13";
+        }
+
+        .slide-wrapper:nth-child(6) .slide::after {
+            content: "06 / 13";
+        }
+
+        .slide-wrapper:nth-child(7) .slide::after {
+            content: "07 / 13";
+        }
+
+        .slide-wrapper:nth-child(8) .slide::after {
+            content: "08 / 13";
+        }
+
+        .slide-wrapper:nth-child(9) .slide::after {
+            content: "09 / 13";
+        }
+
+        .slide-wrapper:nth-child(10) .slide::after {
+            content: "10 / 13";
+        }
+
+        .slide-wrapper:nth-child(11) .slide::after {
+            content: "11 / 13";
+        }
+
+        .slide-wrapper:nth-child(12) .slide::after {
+            content: "12 / 13";
+        }
+
+        .slide-wrapper:nth-child(13) .slide::after {
+            content: "13 / 13";
+        }
+
+        /* === Typography === */
+        h1 {
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--dark);
+            line-height: 1.35;
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 36px;
+            line-height: 1.3;
+        }
+
+        .section-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--blue);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        p,
+        li {
+            font-size: 18px;
+            line-height: 1.7;
+            color: var(--gray);
+        }
+
+        /* === Cover === */
+        .cover {
+            text-align: center;
+            justify-content: center;
+        }
+
+        .cover h1 {
+            font-size: 44px;
+            margin-bottom: 14px;
+        }
+
+        .cover .sub {
+            font-size: 22px;
+            color: var(--blue);
+            font-weight: 500;
+            margin-bottom: 48px;
+        }
+
+        .cover .meta {
+            font-size: 16px;
+            color: #bbb;
+        }
+
+        /* === P2 big number === */
+        .big-num {
+            font-size: 96px;
+            font-weight: 700;
+            color: var(--blue);
+            line-height: 1;
+            margin: 20px 0;
+        }
+
+        .q-text {
+            font-size: 24px;
+            color: var(--gray);
+            margin-bottom: 8px;
+        }
+
+        .contrast {
+            font-size: 17px;
+            color: #aaa;
+            margin: 6px 0;
+        }
+
+        .contrast .hl {
+            color: var(--orange);
+            font-weight: 600;
+        }
+
+        .takeaway {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--orange);
+            margin-top: 28px;
+        }
+
+        /* === Cards === */
+        .card {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 22px 28px;
+            margin: 10px 0;
+        }
+
+        .card .lbl {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--blue);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            font-size: 19px;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .card .note {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 6px;
+        }
+
+        .insight {
+            border-left: 4px solid var(--blue);
+            padding: 18px 26px;
+            margin: 20px 0;
+        }
+
+        .insight p {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--blue);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* === Comparison === */
+        .cmp-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 28px 0;
+        }
+
+        .cmp-box {
+            border-radius: 10px;
+            padding: 28px;
+        }
+
+        .cmp-box.bad {
+            background: #FFF3F0;
+            border: 1.5px solid #FFCCBC;
+        }
+
+        .cmp-box.good {
+            background: #F1F8E9;
+            border: 1.5px solid #DCEDC8;
+        }
+
+        .cmp-box .tag {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+        }
+
+        .cmp-box.bad .tag {
+            color: var(--orange);
+        }
+
+        .cmp-box.good .tag {
+            color: #2E7D32;
+        }
+
+        .cmp-box .qt {
+            font-size: 18px;
+            color: var(--dark);
+            font-style: italic;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .cmp-box .sc {
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        /* === Steps === */
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        .srow {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .snum {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--blue);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .stxt {
+            font-size: 19px;
+            color: var(--dark);
+        }
+
+        .stxt .ar {
+            color: var(--blue);
+            margin: 0 6px;
+        }
+
+        /* === Workflow === */
+        .wf-row {
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+            margin: 32px 0;
+        }
+
+        .wf-step {
+            flex: 1;
+            text-align: center;
+            padding: 20px 10px;
+            border-radius: 10px;
+            background: var(--light);
+        }
+
+        .wf-step .em {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .wf-step .nm {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 4px;
+        }
+
+        .wf-step .rl {
+            font-size: 12px;
+            color: var(--blue);
+            font-weight: 500;
+        }
+
+        .wf-ar {
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+            color: #ccc;
+        }
+
+        .bot-line {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--blue);
+            margin-top: 24px;
+            padding: 18px;
+            background: #E3F2FD;
+            border-radius: 8px;
+        }
+
+        /* === Table === */
+        table.cl {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 16px;
+        }
+
+        table.cl th {
+            text-align: left;
+            padding: 10px 14px;
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 2px solid var(--dark);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        table.cl td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--gray);
+        }
+
+        table.cl td:nth-child(3) {
+            font-weight: 600;
+            color: var(--blue);
+        }
+
+        .info {
+            font-size: 16px;
+            color: var(--gray);
+            margin: 6px 0;
+        }
+
+        .info strong {
+            color: var(--dark);
+        }
+
+        /* === Tags === */
+        .tg-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .tg {
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .tg.bl {
+            background: #E3F2FD;
+            color: var(--blue);
+        }
+
+        .tg.or {
+            background: #FFF3E0;
+            color: var(--orange);
+        }
+
+        .jdg {
+            background: var(--light);
+            border-left: 4px solid var(--orange);
+            padding: 16px 22px;
+            margin: 16px 0;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .jdg p {
+            font-size: 17px;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .jdg .hl {
+            color: var(--orange);
+            font-weight: 600;
+        }
+
+        /* === Code box === */
+        .cd-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--blue);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 6px;
+            margin-top: 18px;
+        }
+
+        .cd-box {
+            background: var(--light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin: 6px 0;
+            font-family: "SF Mono", "Menlo", "Monaco", monospace;
+            font-size: 15px;
+            line-height: 1.9;
+            color: var(--dark);
+        }
+
+        .cd-box .out {
+            color: var(--blue);
+            font-weight: 600;
+        }
+
+        /* === Two col === */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin: 28px 0;
+        }
+
+        .col h4 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid;
+        }
+
+        .col.l h4 {
+            color: var(--blue);
+            border-color: var(--blue);
+        }
+
+        .col.r h4 {
+            color: var(--orange);
+            border-color: var(--orange);
+        }
+
+        .col ul {
+            list-style: none;
+        }
+
+        .col li {
+            font-size: 17px;
+            color: var(--dark);
+            padding: 6px 0 6px 20px;
+            position: relative;
+        }
+
+        .col li::before {
+            position: absolute;
+            left: 0;
+            font-weight: 700;
+        }
+
+        .col.l li::before {
+            content: "→";
+            color: var(--blue);
+        }
+
+        .col.r li::before {
+            content: "→";
+            color: var(--orange);
+        }
+
+        /* === Tips === */
+        .tips {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin: 28px 0;
+        }
+
+        .tip {
+            padding: 24px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .tip .n {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 6px;
+        }
+
+        .tip .t {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 8px;
+        }
+
+        .tip .d {
+            font-size: 15px;
+            color: var(--gray);
+            line-height: 1.65;
+        }
+
+        /* === Three col === */
+        .three-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin: 16px 0;
+        }
+
+        .dept {
+            padding: 18px 20px;
+            border-radius: 10px;
+            background: var(--light);
+        }
+
+        .dept h4 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .dept li {
+            font-size: 14px;
+            color: var(--dark);
+            margin-bottom: 6px;
+            list-style: none;
+            padding-left: 16px;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .dept li::before {
+            content: "·";
+            position: absolute;
+            left: 2px;
+            color: var(--blue);
+            font-weight: 700;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        /* === Doc links === */
+        a.doc-link {
+            color: var(--blue);
+            font-weight: 700;
+            text-decoration: none;
+            border-bottom: 2px solid var(--blue);
+            padding-bottom: 1px;
+            transition: opacity 0.2s;
+        }
+        a.doc-link:hover {
+            opacity: 0.7;
+        }
+        a.doc-link::before {
+            content: "📎 ";
+        }
+
+        /* === P13 final === */
+        .final {
+            background: var(--dark);
+        }
+
+        .final h2 {
+            color: #fff;
+        }
+
+        .final .section-label {
+            color: var(--orange);
+        }
+
+        .final::after {
+            color: #555 !important;
+        }
+
+        .ql {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 16px 0 32px;
+        }
+
+        .qi {
+            font-size: 21px;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            line-height: 1.5;
+        }
+
+        .req {
+            border: 2px solid var(--orange);
+            border-radius: 10px;
+            padding: 28px;
+            margin-top: 8px;
+        }
+
+        .req .rt {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--orange);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+        }
+
+        .req li {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 10px;
+            list-style: none;
+        }
+
+        .fl {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--orange);
+            margin-top: 20px;
+            letter-spacing: 3px;
+        }
+
+        .slogan {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 22px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.45);
+            letter-spacing: 4px;
+            font-style: italic;
+        }
+
+        /* === Responsive scale === */
+        @media (max-height: 800px),
+        (max-width: 1360px) {
+            :root {
+                --slide-w: 1024px;
+                --slide-h: 576px;
+            }
+
+            .slide {
+                padding: 48px 60px;
+            }
+
+            h1 {
+                font-size: 36px;
+            }
+
+            h2 {
+                font-size: 27px;
+                margin-bottom: 28px;
+            }
+
+            p,
+            li {
+                font-size: 16px;
+            }
+
+            .big-num {
+                font-size: 72px;
+            }
+
+            .cover h1 {
+                font-size: 36px;
+            }
+        }
+
+        @media (max-height: 650px),
+        (max-width: 1100px) {
+            :root {
+                --slide-w: 860px;
+                --slide-h: 484px;
+            }
+
+            .slide {
+                padding: 36px 48px;
+            }
+
+            h1 {
+                font-size: 30px;
+            }
+
+            h2 {
+                font-size: 23px;
+                margin-bottom: 22px;
+            }
+
+            .big-num {
+                font-size: 56px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- P1 -->
+    <div class="slide-wrapper">
+        <div class="slide cover">
+            <div class="section-label">AI协作方法论</div>
+            <h1>AI不是替代你工作<br>是改变你工作的方式</h1>
+            <div class="sub">从AI评论生成项目看人机协作方法论</div>
+            <div class="meta">3/10/2026, by Claude</div>
+        </div>
+    </div>
+
+    <!-- P2 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="q-text">搭建一套完整的AI评论生成体系，需要多久？</div>
+            <div class="big-num">1个工作日</div>
+            <div class="contrast">传统方式：调研1周 + 分析1周 + 框架搭建1周 + 文档输出3天 <span class="hl">≈ 3周</span></div>
+            <div class="takeaway">不是更快地做同样的事，是用完全不同的方式做事</div>
+        </div>
+    </div>
+
+    <!-- P3 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="section-label">核心原则</div>
+            <h2>一、人定方向，AI做执行</h2>
+            <div class="card">
+                <div class="lbl">人的判断</div>
+                <p>「活人感」是评论质量的最高原则</p>
+                <div class="note">← 这来自对业务的深度理解，AI给不了</div>
+            </div>
+            <div class="card">
+                <div class="lbl">AI的执行</div>
+                <p>基于这个原则，去抖音、小红书采集94条真实高赞评论，分析模式，归纳原型</p>
+            </div>
+            <div class="insight">
+                <p>AI是你能力的放大器，不是你思考的替代品</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- P4 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="section-label">核心原则</div>
+            <h2>二、真实数据驱动，拒绝凭空生成</h2>
+            <div class="cmp-grid">
+                <div class="cmp-box bad">
+                    <div class="tag">❌ 直接让AI写评论</div>
+                    <div class="qt">"这部剧剧情紧凑，演技精湛，服化道精良，值得推荐！"</div>
+                    <div class="sc">活人感 4/10</div>
+                </div>
+                <div class="cmp-box good">
+                    <div class="tag">✅ 先采集真实数据，再让AI学习模式</div>
+                    <div class="qt">"老爷子的罩衫材料是缝小香风那种吗"</div>
+                    <div class="sc">4,671赞 · 活人感 10/10</div>
+                </div>
+            </div>
+            <div class="insight">
+                <p>AI的产出质量，取决于你喂给它什么</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- P5 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="section-label">核心原则</div>
+            <h2>三、持续对话，迭代修正</h2>
+            <div class="steps">
+                <div class="srow">
+                    <div class="snum">1</div>
+                    <div class="stxt">初始框架 <span class="ar">→</span> 7个评论原型</div>
+                </div>
+                <div class="srow">
+                    <div class="snum">2</div>
+                    <div class="stxt">采集真实数据 <span class="ar">→</span> 发现框架覆盖不了真实世界</div>
+                </div>
+                <div class="srow">
+                    <div class="snum">3</div>
+                    <div class="stxt">人的判断介入 <span class="ar">→</span> "制作审视型、逻辑质疑型需要独立成型"</div>
+                </div>
+                <div class="srow">
+                    <div class="snum">4</div>
+                    <div class="stxt">AI重新构建 <span class="ar">→</span> <strong>11个原型 + 6大主题维度</strong></div>
+                </div>
+            </div>
+            <div class="insight">
+                <p>不怕推翻重来。AI不会累，不会抱怨，随时可以重构。<br>人的价值在于判断「对不对」。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- P6 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="section-label">核心方法</div>
+            <h2>人机协作的5步工作流</h2>
+            <div class="wf-row">
+                <div class="wf-step">
+                    <div class="em">🧠</div>
+                    <div class="nm">定义问题</div>
+                    <div class="rl">人主导</div>
+                </div>
+                <div class="wf-ar">→</div>
+                <div class="wf-step">
+                    <div class="em">🤖</div>
+                    <div class="nm">采集真实数据</div>
+                    <div class="rl">AI执行</div>
+                </div>
+                <div class="wf-ar">→</div>
+                <div class="wf-step">
+                    <div class="em">🤝</div>
+                    <div class="nm">分析归纳</div>
+                    <div class="rl">AI + 人审核</div>
+                </div>
+                <div class="wf-ar">→</div>
+                <div class="wf-step">
+                    <div class="em">🧠</div>
+                    <div class="nm">构建框架</div>
+                    <div class="rl">AI系统化 + 人修正</div>
+                </div>
+                <div class="wf-ar">→</div>
+                <div class="wf-step">
+                    <div class="em">🤖</div>
+                    <div class="nm">输出方案</div>
+                    <div class="rl">AI模板化</div>
+                </div>
+            </div>
+            <div class="bot-line">关键：每一步都有人的判断介入，不是丢给AI就不管了</div>
+        </div>
+    </div>
+
+    <!-- P7 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="section-label">核心方法</div>
+            <h2>让AI去做「田野调查」</h2>
+            <div class="info"><strong>覆盖：</strong>16部热门短剧 &nbsp;|&nbsp; <strong>规模：</strong>94条真实评论 &nbsp;|&nbsp;
+                <strong>清洗：</strong>自动过滤刷币、机器人 &nbsp;|&nbsp; <a class="doc-link"
+                    href="https://mi.feishu.cn/wiki/O7k3wkWcyinJTgkAY8Pc047DnGh" target="_blank"
+                    rel="noopener noreferrer">短剧评论样本数据集</a>
+            </div>
+            <table class="cl">
+                <thead>
+                    <tr>
+                        <th>短剧</th>
+                        <th>评论</th>
+                        <th>赞</th>
+                        <th>原型</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>晚来不识卿</td>
+                        <td>"老爷子的罩衫材料是缝小香风那种吗"</td>
+                        <td>4,671</td>
+                        <td>制作审视型</td>
+                    </tr>
+                    <tr>
+                        <td>夫妻的春节</td>
+                        <td>"刚吵完架刷到的"</td>
+                        <td>25</td>
+                        <td>情感代入型</td>
+                    </tr>
+                    <tr>
+                        <td>我的婚姻不扶贫</td>
+                        <td>"我好像看见了我妈"</td>
+                        <td>31</td>
+                        <td>真实映射型</td>
+                    </tr>
+                    <tr>
+                        <td>爸，我带您来办业务了</td>
+                        <td>"终于来了个把银行的事给抖出来了"</td>
+                        <td>268</td>
+                        <td>情绪释放型</td>
+                    </tr>
+                    <tr>
+                        <td>十八岁太奶奶驾到</td>
+                        <td>"好看 就是还会有5吗"</td>
+                        <td>1,120</td>
+                        <td>系列讨论型</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="insight">
+                <p>过去：实习生花3天采集整理 → 现在：AI几小时完成采集+清洗+分类+入库</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- P8 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="section-label">核心方法</div>
+            <h2>让AI做系统化，人做判断</h2>
+            <p style="font-size:18px;color:var(--dark);margin-bottom:18px;">AI把94条零散评论 → 归纳出 <strong>11个评论原型</strong> +
+                <strong>6个主题维度</strong> + 策略矩阵 &nbsp;|&nbsp; <a class="doc-link"
+                    href="https://mi.feishu.cn/wiki/SahHwSwgNiMMJNkCxykcXwUJn7d" target="_blank"
+                    rel="noopener noreferrer">什么是好评论？</a>
+            </p>
+            <div style="font-size:12px;color:var(--gray);font-weight:700;letter-spacing:1px;margin-bottom:6px;">11个评论原型
+            </div>
+            <div class="tg-group">
+                <span class="tg bl">精准吐槽型</span><span class="tg bl">情感代入型</span><span class="tg bl">情绪释放型</span>
+                <span class="tg bl">剧情讨论型</span><span class="tg bl">真实映射型</span><span class="tg bl">行动方案型</span>
+                <span class="tg bl">造梗型</span><span class="tg bl">温暖互助型</span><span class="tg bl">制作审视型</span>
+                <span class="tg bl">逻辑质疑型</span><span class="tg bl">系列讨论型</span>
+            </div>
+            <div style="font-size:12px;color:var(--gray);font-weight:700;letter-spacing:1px;margin:14px 0 6px;">6个主题维度
+            </div>
+            <div class="tg-group">
+                <span class="tg or">故事/剧情</span><span class="tg or">角色/演员</span><span class="tg or">制作/视觉</span>
+                <span class="tg or">社会映射</span><span class="tg or">观看体验</span><span class="tg or">演员圈层</span>
+            </div>
+            <div class="jdg">
+                <p>人的判断：<span class="hl">「验血验出双胞胎」不是吐槽，是逻辑质疑</span> → AI立刻修正分类</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- P9 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="section-label">核心方法</div>
+            <h2>产出不是「报告」，是可直接使用的模板</h2>
+            <div class="cd-label">输入模块</div>
+            <div class="cd-box">① 短剧元数据（名称、类型、是否系列）<br>② 当前集信息（集数、核心事件、情绪基调）<br>③ 角色信息（角色名、行为摘要）<br>④ 制作细节（服化道特色）<br>⑤
+                社会话题（映射的现实议题）<br>⑥ 生成指令（目标原型、主题维度、情绪强度）</div>
+            <div class="cd-label">示例</div>
+            <div class="cd-box"><strong>输入：</strong>《我的婚姻不扶贫》第3集 · 小叔子打嫂子 · 行动方案型 · 社会映射维度<br><br><span
+                    class="out">输出：换做是我一巴掌就报警了，还能忍三年？把老公一起撵出去</span></div>
+        </div>
+    </div>
+
+    <!-- P10 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="section-label">关键细节</div>
+            <h2>交给AI vs 留给自己</h2>
+            <div class="two-col">
+                <div class="col l">
+                    <h4>✅ 交给AI</h4>
+                    <ul>
+                        <li>大规模数据采集与清洗</li>
+                        <li>模式识别与分类归纳</li>
+                        <li>框架系统化与文档生成</li>
+                        <li>方案模板化与批量产出</li>
+                        <li>多版本迭代不知疲倦</li>
+                    </ul>
+                </div>
+                <div class="col r">
+                    <h4>🧠 留给自己</h4>
+                    <ul>
+                        <li>业务方向与核心原则定义</li>
+                        <li>审美标准与质量判断</li>
+                        <li>真实 vs 虚假的鉴别</li>
+                        <li>最终决策与拍板</li>
+                        <li>对「好」的定义</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="bot-line">AI放大你的能力，但不替代你的判断</div>
+        </div>
+    </div>
+
+    <!-- P11 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="section-label">关键细节</div>
+            <h2>四个实操技巧</h2>
+            <div class="tips">
+                <div class="tip">
+                    <div class="n">01</div>
+                    <div class="t">给足上下文</div>
+                    <div class="d">不是一句"帮我写评论"，而是给AI完整的背景、数据、约束条件。Prompt的质量决定产出的质量。</div>
+                </div>
+                <div class="tip">
+                    <div class="n">02</div>
+                    <div class="t">要求用真实数据</div>
+                    <div class="d">明确要求AI基于采集的真实数据分析，而非凭训练知识编造。发现编造立刻叫停。</div>
+                </div>
+                <div class="tip">
+                    <div class="n">03</div>
+                    <div class="t">敢于否定，要求重做</div>
+                    <div class="d">AI给的第一版往往不够好。你的判断力就是在"这不对，重来"的时刻体现的。</div>
+                </div>
+                <div class="tip">
+                    <div class="n">04</div>
+                    <div class="t">产出模板，而非报告</div>
+                    <div class="d">要求AI把成果转化为可复用的工作模板，让成果持续发挥价值，而非看完就扔。</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- P12 -->
+    <div class="slide-wrapper">
+        <div class="slide">
+            <div class="section-label">关键细节</div>
+            <h2>每个部门都有AI协作的场景</h2>
+            <div class="three-col">
+                <div class="dept">
+                    <h4>运营</h4>
+                    <ul>
+                        <li><strong>用户调研</strong> — AI采集+分析评论反馈</li>
+                        <li><strong>内容策略</strong> — AI归纳模式+生成策略</li>
+                        <li><strong>社区运营</strong> — AI生成种子内容+互动</li>
+                    </ul>
+                </div>
+                <div class="dept">
+                    <h4>产品</h4>
+                    <ul>
+                        <li><strong>竞品分析</strong> — AI采集竞品数据+对比</li>
+                        <li><strong>需求文档</strong> — AI生成PRD框架+用例</li>
+                        <li><strong>用户画像</strong> — AI从行为数据归纳画像</li>
+                    </ul>
+                </div>
+                <div class="dept">
+                    <h4>技术</h4>
+                    <ul>
+                        <li><strong>技术方案</strong> — AI辅助架构设计+文档</li>
+                        <li><strong>代码审查</strong> — AI自动化review+建议</li>
+                        <li><strong>故障排查</strong> — AI分析日志+定位问题</li>
+                    </ul>
+                </div>
+                <div class="dept">
+                    <h4>销售/商务</h4>
+                    <ul>
+                        <li><strong>客户调研</strong> — AI采集客户背景+行业洞察</li>
+                        <li><strong>方案定制</strong> — AI生成定制化提案+话术</li>
+                        <li><strong>竞对追踪</strong> — AI监控竞品动态+预警</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- P13 -->
+    <div class="slide-wrapper">
+        <div class="slide final" style="justify-content:center;text-align:center;">
+            <div class="ql" style="margin-bottom:0;">
+                <div class="qi" style="border:none;font-size:20px;">你的团队里，有多少重复性工作还在靠人堆？</div>
+                <div class="qi" style="border:none;font-size:20px;">你自己上一次用AI完成一个完整工作任务，是什么时候？</div>
+                <div class="qi" style="border:none;font-size:20px;">如果竞争对手已经在用AI提效，你的团队准备好了吗？</div>
+            </div>
+            <div style="margin-top:48px;font-size:44px;font-weight:800;color:#fff;letter-spacing:6px;line-height:1.4;">
+                不会用AI的人<br>将被会用AI的人取代</div>
+        </div>
+    </div>
+
+</body>
+
+</html>
