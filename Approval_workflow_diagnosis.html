@@ -1,0 +1,3390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>审批流优化诊断报告</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --text: #1d1d1f;
+      --secondary: #48484a;
+      --bg: #ffffff;
+      --card: #ffffff;
+      --border: #e5e5e7;
+      --accent: #1d1d1f;
+      --red: #ff3b30;
+      --orange: #ff9500;
+      --green: #34c759;
+      --blue: #007aff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    h1 {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 40px 0 16px;
+      letter-spacing: -0.2px;
+      color: var(--text);
+      border: none;
+      padding: 0;
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin: 24px 0 10px;
+      color: var(--text);
+    }
+
+    h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 16px 0 8px;
+      color: var(--secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    p,
+    li {
+      font-size: 14px;
+      color: var(--secondary);
+    }
+
+    .subtitle {
+      color: var(--secondary);
+      font-size: 14px;
+    }
+
+    /* Header — clean, no color block */
+    .header {
+      padding: 48px 0 32px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      color: var(--text);
+      font-size: 36px;
+      letter-spacing: -0.8px;
+    }
+
+    .header .subtitle {
+      color: var(--secondary);
+      margin-top: 6px;
+    }
+
+    /* KPI row */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .kpi {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px 10px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .kpi .number {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .kpi .label {
+      font-size: 11px;
+      color: var(--secondary);
+      margin-top: 4px;
+    }
+
+    @media(max-width:900px) {
+      .kpi-row {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .kpi.danger .number {
+      color: var(--red);
+    }
+
+    .kpi.warning .number {
+      color: var(--orange);
+    }
+
+    .kpi.success .number {
+      color: var(--green);
+    }
+
+    .kpi.info .number,
+    .kpi.danger,
+    .kpi.warning,
+    .kpi.success {
+      border-color: var(--border);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 16px 0;
+      border: 1px solid var(--border);
+    }
+
+    .card.highlight {
+      border-left: 3px solid var(--red);
+    }
+
+    .card.info {
+      border-left: 3px solid var(--blue);
+    }
+
+    .card.warn {
+      border-left: 3px solid var(--orange);
+    }
+
+    /* Principle boxes */
+    .principle-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .principle {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .principle .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--text);
+      color: #fff;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    .principle .title {
+      font-weight: 600;
+      font-size: 14px;
+      display: inline;
+    }
+
+    .principle .desc {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--secondary);
+    }
+
+    .principle .diagnosis {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #fff5f5;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #c00;
+      border: 1px solid #ffe0e0;
+    }
+
+    .principle .diagnosis.ok {
+      background: #f0faf0;
+      color: #1a7a1a;
+      border-color: #d0f0d0;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 12px 0;
+    }
+
+    th {
+      background: transparent;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #f0f0f2;
+    }
+
+    tr:hover {
+      background: #f5f5f7;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .tag-compliance {
+      background: #f0f5ff;
+      color: #0055d4;
+    }
+
+    .tag-resource {
+      background: #fff8ee;
+      color: #995500;
+    }
+
+    .tag-business {
+      background: #f0faf0;
+      color: #1a7a1a;
+    }
+
+    .tag-execute {
+      background: #f5f5f7;
+      color: var(--secondary);
+    }
+
+    .tag-low {
+      background: #fff5f5;
+      color: #c00;
+    }
+
+    /* Chart container */
+    .chart-container {
+      position: relative;
+      height: 350px;
+      margin: 16px 0;
+    }
+
+    .chart-sm {
+      height: 280px;
+    }
+
+    /* Flow timeline */
+    .flow-timeline {
+      margin: 16px 0;
+    }
+
+    .flow-node {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+      border-left: 2px solid var(--border);
+      margin-left: 14px;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .flow-node::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text);
+    }
+
+    .flow-node.bottleneck::before {
+      background: var(--red);
+    }
+
+    .flow-node.auto::before {
+      background: #ccc;
+    }
+
+    .flow-node .node-info {
+      flex: 1;
+    }
+
+    .flow-node .node-name {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .flow-node .node-person {
+      font-size: 12px;
+      color: var(--secondary);
+    }
+
+    .flow-node .node-time {
+      font-size: 13px;
+      font-weight: 600;
+      min-width: 80px;
+      text-align: right;
+      color: var(--text);
+    }
+
+    .flow-node .node-time.slow {
+      color: var(--red);
+    }
+
+    /* Tabs — prominent navigation bar */
+    .tabs-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      padding: 16px 0 0;
+      margin: 0 -24px;
+    }
+
+    .tabs-label {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #aeaeb2;
+      margin-bottom: 8px;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      background: #f2f2f7;
+      border-radius: 12px;
+      padding: 4px;
+      margin: 0 24px 0;
+      gap: 2px;
+      flex-wrap: wrap;
+    }
+
+    .tabs-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 24px 28px;
+    }
+
+    .tab {
+      padding: 11px 22px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 500;
+      color: #8e8e93;
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+
+    .tab:hover {
+      color: var(--text);
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .tab.active {
+      color: #fff;
+      background: var(--text);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-red {
+      background: #fff5f5;
+      color: var(--red);
+    }
+
+    .badge-yellow {
+      background: #fff8ee;
+      color: #995500;
+    }
+
+    .badge-green {
+      background: #f0faf0;
+      color: #1a7a1a;
+    }
+
+    .badge-blue {
+      background: #f0f5ff;
+      color: var(--blue);
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 4px;
+      background: #f0f0f2;
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 4px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+    }
+
+    /* Two column */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media(max-width:768px) {
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .principle-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Recommendation */
+    .rec {
+      padding: 12px 16px;
+      margin: 8px 0;
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .rec-high {
+      background: #fff5f5;
+      border-left: 3px solid var(--red);
+    }
+
+    .rec-med {
+      background: #fff8ee;
+      border-left: 3px solid var(--orange);
+    }
+
+    .rec-low {
+      background: #f0f5ff;
+      border-left: 3px solid var(--blue);
+    }
+
+    .rec strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    /* Summary box */
+    .summary-box {
+      background: #f5f5f7;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+
+    .summary-box h3 {
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    /* Print */
+    @media print {
+      .tabs {
+        display: none;
+      }
+
+      .tab-content {
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+      <h1>审批流优化</h1>
+      <div class="subtitle">数据源：刘婵个人审批任务数据（飞书审批报表下载） · 近180天 · 2026年3月10日 · 仅供参考</div>
+    </div>
+
+    <!-- EXECUTIVE SUMMARY -->
+    <div class="summary-box">
+      <p style="font-size:15px;color:var(--text);font-weight:600;margin-bottom:10px;letter-spacing:-0.2px;">
+        "好的审批流：用最少的节点、最短的时间，确保合规、资源、风险三个维度都被有能力的人看过了。"
+      </p>
+      <p style="font-size:14px;">
+        分析覆盖经手审批 <strong style="color:var(--text)">2,857</strong> 个任务（部门全量约 14,900 个），80 类流程、27,948 次审批操作。
+        平均每个流程经过 <strong style="color:var(--text)">10个</strong> 节点，<strong style="color:var(--red)">83.4%</strong>
+        的审批无任何意见。
+        头部4类流程占 46%，是优化首要目标。
+      </p>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="number">2,857</div>
+        <div class="label">分析任务数</div>
+      </div>
+      <div class="kpi warning">
+        <div class="number">10.0</div>
+        <div class="label">平均审批节点</div>
+      </div>
+      <div class="kpi danger">
+        <div class="number">83.4%</div>
+        <div class="label">无意见审批率</div>
+      </div>
+      <div class="kpi">
+        <div class="number">11.1h</div>
+        <div class="label">平均节点耗时</div>
+      </div>
+      <div class="kpi warning">
+        <div class="number">7.2%</div>
+        <div class="label">盲批率(≤1min)</div>
+      </div>
+      <div class="kpi danger">
+        <div class="number">207</div>
+        <div class="label">同人重复出现次数</div>
+      </div>
+    </div>
+
+    <!-- TAB NAVIGATION -->
+    <div class="tabs-wrapper">
+      <div class="tabs-label">点击切换查看</div>
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('principles')">诊断框架</button>
+        <button class="tab" onclick="switchTab('panorama')">流程全景</button>
+        <button class="tab" onclick="switchTab('nodes')">节点诊断</button>
+        <button class="tab" onclick="switchTab('people')">人×角色</button>
+        <button class="tab" onclick="switchTab('cases')">重点流程拆解</button>
+        <button class="tab" onclick="switchTab('actions')">优化建议</button>
+        <button class="tab" onclick="switchTab('plan')">落地方案</button>
+      </div>
+      <div class="tabs-divider"></div>
+    </div>
+
+    <!-- TAB 1: 诊断框架 -->
+    <div id="tab-principles" class="tab-content active">
+      <h2>诊断框架：五大原则 × 三维目的</h2>
+
+      <h3>审批的本质目的</h3>
+      <p style="margin-bottom:16px;">审批本质上是风险管理机制，确保三个维度被正确覆盖：</p>
+      <div class="kpi-row">
+        <div class="kpi info" style="border-left-color:var(--blue);">
+          <div class="number" style="font-size:20px;color:var(--blue);">合规</div>
+          <div class="label">法务审核、综管审批、印控中心、税务审批</div>
+        </div>
+        <div class="kpi" style="border-color:var(--border);">
+          <div class="number" style="font-size:20px;color:var(--orange);">资源</div>
+          <div class="label">财务BP、预算管理、财务初审/复审、管理层审批</div>
+        </div>
+        <div class="kpi success">
+          <div class="number" style="font-size:20px;color:var(--green);">风险/业务判断</div>
+          <div class="label">业务审批、商务领导、部门负责人、业务终审</div>
+        </div>
+      </div>
+
+      <h3>五大优化原则与数据诊断</h3>
+      <div class="principle-grid">
+
+        <div class="principle">
+          <span class="num">1</span><span class="title">权责对等——每个节点必须回答"他审什么"</span>
+          <div class="desc">每个审批节点必须对应明确的判断维度（合规/资源/风险之一）。如果一个节点的存在无法回答"他在审什么"，就不应该存在。</div>
+          <div class="diagnosis">
+            <strong>诊断结果：</strong>83.4% 的审批操作无任何意见，其中"直属主管"(22.8%盲批)、"直属leader"(26.2%盲批)、"相关领导"(22.4%盲批)
+            等节点既不审合规、也不审资源，职责定义模糊。
+          </div>
+        </div>
+
+        <div class="principle">
+          <span class="num">2</span><span class="title">节点最少化——每增加一个节点都在增加成本</span>
+          <div class="desc">每增加1个串行节点，流程时间平均增加 11.1 小时。审批链越长，实际每个人的责任感越弱（"反正前面/后面有人看"）。</div>
+          <div class="diagnosis">
+            <strong>诊断结果：</strong>头部流程平均 10-17 个节点。合同申请12节点、清结算14节点、对公付款12节点。207次同一人在同一流程中重复出现（角色不同但人相同），是可合并的冗余。
+          </div>
+        </div>
+
+        <div class="principle">
+          <span class="num">3</span><span class="title">串行改并行——无依赖关系的审批应同步进行</span>
+          <div class="desc">合规审核（法务）、资源审核（财务）、业务判断如果互不依赖，串行排列是不必要的时间浪费。</div>
+          <div class="diagnosis">
+            <strong>诊断结果：</strong>合同申请中，法务审核（avg 31h）→ 财务BP（avg 27h）→ 管理层审批 为串行。若法务与财务并行，预估可节省 1-2
+            天。清结算付款中5层业务审批全部串行（seq 5-10），至少可压缩为2层。
+          </div>
+        </div>
+
+        <div class="principle">
+          <span class="num">4</span><span class="title">分级授权——小事不应走完整审批链</span>
+          <div class="desc">不同金额/风险等级应对应不同的审批链长度。低风险事项（如小额领用、常规请假）无需多级审批。</div>
+          <div class="diagnosis">
+            <strong>诊断结果：</strong>当前缺少金额数据，但内部领用申请（278件，avg 7节点）和请假申请（108件）等低风险流程仍有多层审批。建议补充金额维度后，按阈值简化低值审批链。
+          </div>
+        </div>
+
+        <div class="principle">
+          <span class="num">5</span><span class="title">流程设计保证正确的人在正确的位置</span>
+          <div class="desc">审批留痕的本质不是要求每个人写意见增加工作量，而是流程设计应确保在正确的位置放置正确的人。如果某个节点的人从不留意见，说明这个位置可能不需要这个人。</div>
+          <div class="diagnosis ok">
+            <strong>诊断信号：</strong>无意见率本身就是一个强信号。财务BP审批有63.9%的意见率和8.8%的驳回率（value score
+            49），说明这个节点在真正工作。而直属主管99.4%无意见、0%驳回——这个位置没有人在做实质判断。
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 2: 流程全景 -->
+    <div id="tab-panorama" class="tab-content">
+      <h2>流程全景：优先级矩阵</h2>
+      <p>优先级 = 流量 × (平均端到端天数 + 平均节点数)，综合反映流程的"改善空间×影响面"。</p>
+
+      <div class="card">
+        <h3>Top 15 流程优先级排序</h3>
+        <div class="chart-container"><canvas id="chartPriority"></canvas></div>
+      </div>
+
+      <div class="card">
+        <h3>流程详情</h3>
+        <table>
+          <tr>
+            <th>流程名称</th>
+            <th>数量</th>
+            <th>平均节点</th>
+            <th>平均耗时(天)</th>
+            <th>盲批率</th>
+            <th>无意见率</th>
+            <th>系统自动</th>
+            <th>优先级</th>
+          </tr>
+          <tr>
+            <td><strong>合同申请（新）</strong></td>
+            <td>529</td>
+            <td>12.2</td>
+            <td>11.5</td>
+            <td style="color:inherit">4.9%</td>
+            <td style="color:var(--orange)">84.2%</td>
+            <td>120</td>
+            <td><strong>6070</strong></td>
+          </tr>
+          <tr>
+            <td><strong>互联网清结算付款审批</strong></td>
+            <td>433</td>
+            <td>14.3</td>
+            <td>8.9</td>
+            <td style="color:inherit">3.2%</td>
+            <td style="color:var(--orange)">80.7%</td>
+            <td>0</td>
+            <td><strong>3859</strong></td>
+          </tr>
+          <tr>
+            <td><strong>对公付款-通用付款申请流程</strong></td>
+            <td>194</td>
+            <td>12.4</td>
+            <td>11.1</td>
+            <td style="color:var(--orange)">11.7%</td>
+            <td style="color:var(--red)">92.0%</td>
+            <td>24</td>
+            <td><strong>2160</strong></td>
+          </tr>
+          <tr>
+            <td><strong>互部费用事前需求审批流（含预算）</strong></td>
+            <td>150</td>
+            <td>10.9</td>
+            <td>6.5</td>
+            <td style="color:inherit">4.7%</td>
+            <td style="color:var(--orange)">82.5%</td>
+            <td>149</td>
+            <td><strong>977</strong></td>
+          </tr>
+          <tr>
+            <td><strong>集团定制品赠品管理</strong></td>
+            <td>23</td>
+            <td>17.3</td>
+            <td>25.9</td>
+            <td style="color:var(--orange)">13.5%</td>
+            <td style="color:var(--red)">92.6%</td>
+            <td>0</td>
+            <td><strong>596</strong></td>
+          </tr>
+          <tr>
+            <td><strong>内部领用申请</strong></td>
+            <td>278</td>
+            <td>7.0</td>
+            <td>1.3</td>
+            <td style="color:var(--orange)">11.7%</td>
+            <td style="color:var(--red)">95.6%</td>
+            <td>398</td>
+            <td><strong>367</strong></td>
+          </tr>
+          <tr>
+            <td><strong>离职流程</strong></td>
+            <td>24</td>
+            <td>9.5</td>
+            <td>14.6</td>
+            <td style="color:var(--orange)">8.9%</td>
+            <td style="color:var(--red)">98.5%</td>
+            <td>0</td>
+            <td><strong>350</strong></td>
+          </tr>
+          <tr>
+            <td><strong>印章使用申请（新）2.0</strong></td>
+            <td>170</td>
+            <td>7.2</td>
+            <td>1.7</td>
+            <td style="color:inherit">7.8%</td>
+            <td style="color:var(--orange)">83.4%</td>
+            <td>32</td>
+            <td><strong>284</strong></td>
+          </tr>
+          <tr>
+            <td><strong>集团部门费预算申请流程</strong></td>
+            <td>254</td>
+            <td>9.2</td>
+            <td>1.1</td>
+            <td style="color:inherit">5.4%</td>
+            <td style="color:inherit">49.9%</td>
+            <td>344</td>
+            <td><strong>273</strong></td>
+          </tr>
+          <tr>
+            <td><strong>印章证照（新）</strong></td>
+            <td>181</td>
+            <td>7.1</td>
+            <td>1.4</td>
+            <td style="color:var(--orange)">10.6%</td>
+            <td style="color:var(--red)">99.6%</td>
+            <td>187</td>
+            <td><strong>251</strong></td>
+          </tr>
+          <tr>
+            <td><strong>国际商业营销部广告业务政策审批</strong></td>
+            <td>5</td>
+            <td>9.6</td>
+            <td>45.0</td>
+            <td style="color:inherit">0.0%</td>
+            <td style="color:var(--red)">100.0%</td>
+            <td>0</td>
+            <td><strong>225</strong></td>
+          </tr>
+          <tr>
+            <td><strong>返点转亿米充值申请</strong></td>
+            <td>21</td>
+            <td>14.4</td>
+            <td>8.5</td>
+            <td style="color:inherit">6.2%</td>
+            <td style="color:var(--red)">91.3%</td>
+            <td>0</td>
+            <td><strong>179</strong></td>
+          </tr>
+          <tr>
+            <td><strong>招聘需求审批</strong></td>
+            <td>39</td>
+            <td>6.0</td>
+            <td>3.9</td>
+            <td style="color:inherit">7.8%</td>
+            <td style="color:inherit">62.7%</td>
+            <td>1</td>
+            <td><strong>152</strong></td>
+          </tr>
+          <tr>
+            <td><strong>小米集团-公司法定代表人/股东等人的资料/签章（字）/实名验</strong></td>
+            <td>99</td>
+            <td>7.0</td>
+            <td>1.2</td>
+            <td style="color:var(--orange)">8.8%</td>
+            <td style="color:var(--red)">96.7%</td>
+            <td>83</td>
+            <td><strong>120</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Offer审批</strong></td>
+            <td>38</td>
+            <td>5.4</td>
+            <td>2.9</td>
+            <td style="color:inherit">5.0%</td>
+            <td style="color:var(--red)">95.6%</td>
+            <td>7</td>
+            <td><strong>112</strong></td>
+          </tr>
+          <tr>
+            <td><strong>人事转岗流程</strong></td>
+            <td>5</td>
+            <td>8.6</td>
+            <td>16.6</td>
+            <td style="color:var(--red)">18.6%</td>
+            <td style="color:var(--red)">100.0%</td>
+            <td>0</td>
+            <td><strong>83</strong></td>
+          </tr>
+          <tr>
+            <td><strong>签字盖章流程1</strong></td>
+            <td>6</td>
+            <td>9.3</td>
+            <td>11.3</td>
+            <td style="color:var(--orange)">14.0%</td>
+            <td style="color:var(--red)">96.0%</td>
+            <td>6</td>
+            <td><strong>68</strong></td>
+          </tr>
+          <tr>
+            <td><strong>广告价格折扣审批</strong></td>
+            <td>31</td>
+            <td>11.3</td>
+            <td>2.1</td>
+            <td style="color:var(--red)">18.6%</td>
+            <td style="color:inherit">75.4%</td>
+            <td>0</td>
+            <td><strong>64</strong></td>
+          </tr>
+          <tr>
+            <td><strong>请假申请</strong></td>
+            <td>108</td>
+            <td>2.1</td>
+            <td>0.4</td>
+            <td style="color:var(--red)">52.4%</td>
+            <td style="color:var(--red)">100.0%</td>
+            <td>0</td>
+            <td><strong>45</strong></td>
+          </tr>
+          <tr>
+            <td><strong>行政资产申请</strong></td>
+            <td>25</td>
+            <td>6.1</td>
+            <td>1.8</td>
+            <td style="color:var(--red)">19.8%</td>
+            <td style="color:var(--red)">95.2%</td>
+            <td>1</td>
+            <td><strong>44</strong></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3>流量分布 Top 15</h3>
+          <div class="chart-container chart-sm"><canvas id="chartVolume"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>端到端耗时 Top 15 (天)</h3>
+          <div class="chart-container chart-sm"><canvas id="chartDuration"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card info">
+        <h3>部门全量参考（BPM后台数据）</h3>
+        <p>部门近180天全量审批约 <strong>14,900</strong> 件（本报告分析的2,857件为经刘婵经手的子集）。按BPM后台数据：</p>
+        <div class="kpi-row" style="margin-top:12px;">
+          <div class="kpi">
+            <div class="number">14,900</div>
+            <div class="label">部门全量任务</div>
+          </div>
+          <div class="kpi">
+            <div class="number">3,396</div>
+            <div class="label">合同申请(部门)</div>
+          </div>
+          <div class="kpi">
+            <div class="number">2,595</div>
+            <div class="label">陈高铭经手最多</div>
+          </div>
+          <div class="kpi">
+            <div class="number">19%</div>
+            <div class="label">分析覆盖率</div>
+          </div>
+        </div>
+        <p style="margin-top:8px;font-size:13px;color:var(--muted);">合同申请是部门最大流量（3,396件），标准化和优化的收益最为显著。</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: 节点诊断 -->
+    <div id="tab-nodes" class="tab-content">
+      <h2>节点诊断：角色分类与价值评估</h2>
+
+      <h3>节点角色分类</h3>
+      <p>按审批目的（合规/资源/风险）对节点进行分类，评估每个节点是否在正确地回答"他审什么"。</p>
+
+      <div class="card">
+        <h4>合规类节点</h4>
+        <table>
+          <tr>
+            <th>节点</th>
+            <th>审批次数</th>
+            <th>意见率</th>
+            <th>驳回率</th>
+            <th>盲批率</th>
+            <th>平均耗时(h)</th>
+            <th>价值分</th>
+            <th>评估</th>
+          </tr>
+          <tr>
+            <td><span class="tag tag-compliance">合规</span> 印控中心</td>
+            <td>180</td>
+            <td>0.6%</td>
+            <td>0.0%</td>
+            <td>10.0%</td>
+            <td>0.8</td>
+            <td>18.2</td>
+            <td><span class="badge badge-yellow">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-compliance">合规</span> 法务BP</td>
+            <td>99</td>
+            <td>9.1%</td>
+            <td>0.0%</td>
+            <td>17.2%</td>
+            <td>11.3</td>
+            <td>20.2</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-compliance">合规</span> 法务职能</td>
+            <td>245</td>
+            <td>2.4%</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>11.2</td>
+            <td>21.0</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-compliance">合规</span> 税务审批</td>
+            <td>65</td>
+            <td>3.1%</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>135.2</td>
+            <td>21.2</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-compliance">合规</span> 税务</td>
+            <td>28</td>
+            <td>3.6%</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>14.7</td>
+            <td>21.4</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-compliance">合规</span> 印控中心审批</td>
+            <td>476</td>
+            <td>6.9%</td>
+            <td>0.2%</td>
+            <td>0.0%</td>
+            <td>85.5</td>
+            <td>22.9</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-compliance">合规</span> 法务审核</td>
+            <td>549</td>
+            <td>5.6%</td>
+            <td>3.1%</td>
+            <td>2.9%</td>
+            <td>31.1</td>
+            <td>22.9</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-compliance">合规</span> 综管负责人审批</td>
+            <td>88</td>
+            <td>15.9%</td>
+            <td>0.0%</td>
+            <td>2.3%</td>
+            <td>2.2</td>
+            <td>25.9</td>
+            <td><span class="badge badge-green">高价值</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-compliance">合规</span> 综管主管审批</td>
+            <td>17</td>
+            <td>11.8%</td>
+            <td>5.9%</td>
+            <td>0.0%</td>
+            <td>32.5</td>
+            <td>27.1</td>
+            <td><span class="badge badge-green">高价值</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-compliance">合规</span> 综管审批</td>
+            <td>412</td>
+            <td>36.4%</td>
+            <td>3.9%</td>
+            <td>2.9%</td>
+            <td>13.2</td>
+            <td>35.5</td>
+            <td><span class="badge badge-green">高价值</span></td>
+          </tr>
+        </table>
+        <p style="font-size:13px;color:var(--muted);margin-top:8px;">
+          合规类节点整体价值较高：综管审批意见率36.4%、驳回率3.9%，法务审核驳回率3.1%，都在真正把关。印控中心审批平均耗时85.5h（3.6天），是合同流程的最大瓶颈。</p>
+      </div>
+
+      <div class="card">
+        <h4>资源类节点</h4>
+        <table>
+          <tr>
+            <th>节点</th>
+            <th>审批次数</th>
+            <th>意见率</th>
+            <th>驳回率</th>
+            <th>盲批率</th>
+            <th>平均耗时(h)</th>
+            <th>价值分</th>
+            <th>评估</th>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 财务BP审核</td>
+            <td>22</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>13.6%</td>
+            <td>5.2</td>
+            <td>17.3</td>
+            <td><span class="badge badge-red">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 财务总监审批</td>
+            <td>15</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>6.7%</td>
+            <td>1.4</td>
+            <td>18.7</td>
+            <td><span class="badge badge-red">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 财务总监</td>
+            <td>230</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>4.8%</td>
+            <td>3.4</td>
+            <td>19.0</td>
+            <td><span class="badge badge-red">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 互部财务负责人</td>
+            <td>176</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>4.5%</td>
+            <td>1.4</td>
+            <td>19.1</td>
+            <td><span class="badge badge-red">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 财务复审</td>
+            <td>631</td>
+            <td>0.3%</td>
+            <td>0.0%</td>
+            <td>3.2%</td>
+            <td>6.0</td>
+            <td>19.5</td>
+            <td><span class="badge badge-red">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 财务VP</td>
+            <td>53</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>1.9%</td>
+            <td>9.9</td>
+            <td>19.6</td>
+            <td><span class="badge badge-red">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 管理层</td>
+            <td>208</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>1.0%</td>
+            <td>8.4</td>
+            <td>19.8</td>
+            <td><span class="badge badge-red">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 二级财务复审</td>
+            <td>191</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>0.5%</td>
+            <td>6.3</td>
+            <td>19.9</td>
+            <td><span class="badge badge-red">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 资金审批</td>
+            <td>14</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>366.7</td>
+            <td>20.0</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 财务VP审批</td>
+            <td>12</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>22.8</td>
+            <td>20.0</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 管理层审批</td>
+            <td>591</td>
+            <td>0.5%</td>
+            <td>0.3%</td>
+            <td>0.5%</td>
+            <td>13.0</td>
+            <td>20.2</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 预算管理</td>
+            <td>260</td>
+            <td>6.9%</td>
+            <td>0.0%</td>
+            <td>4.6%</td>
+            <td>1.2</td>
+            <td>21.8</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 互部财务主管</td>
+            <td>243</td>
+            <td>12.8%</td>
+            <td>0.0%</td>
+            <td>4.5%</td>
+            <td>5.3</td>
+            <td>24.2</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 财务初审</td>
+            <td>889</td>
+            <td>13.3%</td>
+            <td>0.2%</td>
+            <td>2.5%</td>
+            <td>22.5</td>
+            <td>24.9</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 财务审批</td>
+            <td>143</td>
+            <td>21.0%</td>
+            <td>0.7%</td>
+            <td>1.4%</td>
+            <td>13.4</td>
+            <td>28.4</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 财务BP</td>
+            <td>1967</td>
+            <td>40.2%</td>
+            <td>0.5%</td>
+            <td>2.2%</td>
+            <td>26.9</td>
+            <td>35.8</td>
+            <td><span class="badge badge-green">高价值</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-resource">资源</span> 财务BP审批</td>
+            <td>352</td>
+            <td>63.9%</td>
+            <td>8.8%</td>
+            <td>0.3%</td>
+            <td>31.9</td>
+            <td>49.0</td>
+            <td><span class="badge badge-green">高价值</span></td>
+          </tr>
+        </table>
+        <p style="font-size:13px;color:var(--muted);margin-top:8px;">
+          财务BP审批是最活跃的资源把关节点（意见率63.9%，驳回率8.8%）。财务初审意见率13.3%也在工作。但财务复审（0.3%意见率）和二级财务复审（0%意见率）的实质价值需要评估——是否可与初审合并？</p>
+      </div>
+
+      <div class="card">
+        <h4>业务判断类节点</h4>
+        <table>
+          <tr>
+            <th>节点</th>
+            <th>审批次数</th>
+            <th>意见率</th>
+            <th>驳回率</th>
+            <th>盲批率</th>
+            <th>平均耗时(h)</th>
+            <th>价值分</th>
+            <th>评估</th>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 相关领导</td>
+            <td>156</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>22.4%</td>
+            <td>4.3</td>
+            <td>15.5</td>
+            <td><span class="badge badge-red">低价值</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 部门领导审批</td>
+            <td>317</td>
+            <td>0.9%</td>
+            <td>0.3%</td>
+            <td>12.9%</td>
+            <td>5.0</td>
+            <td>17.9</td>
+            <td><span class="badge badge-red">低价值</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 业务部门领导审批</td>
+            <td>405</td>
+            <td>2.5%</td>
+            <td>0.0%</td>
+            <td>14.3%</td>
+            <td>17.3</td>
+            <td>18.1</td>
+            <td><span class="badge badge-yellow">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 部门领导</td>
+            <td>693</td>
+            <td>1.2%</td>
+            <td>0.0%</td>
+            <td>8.7%</td>
+            <td>6.3</td>
+            <td>18.7</td>
+            <td><span class="badge badge-yellow">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 部门负责人</td>
+            <td>805</td>
+            <td>3.0%</td>
+            <td>0.0%</td>
+            <td>12.2%</td>
+            <td>9.5</td>
+            <td>18.8</td>
+            <td><span class="badge badge-yellow">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 商务领导</td>
+            <td>565</td>
+            <td>1.6%</td>
+            <td>0.0%</td>
+            <td>6.7%</td>
+            <td>25.5</td>
+            <td>19.3</td>
+            <td><span class="badge badge-yellow">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 部门审批</td>
+            <td>1021</td>
+            <td>3.3%</td>
+            <td>0.7%</td>
+            <td>9.5%</td>
+            <td>12.8</td>
+            <td>19.7</td>
+            <td><span class="badge badge-yellow">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 业务终审</td>
+            <td>433</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>1.2%</td>
+            <td>12.9</td>
+            <td>19.8</td>
+            <td><span class="badge badge-yellow">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 商务部门领导</td>
+            <td>326</td>
+            <td>0.0%</td>
+            <td>0.0%</td>
+            <td>0.6%</td>
+            <td>27.1</td>
+            <td>19.9</td>
+            <td><span class="badge badge-yellow">待观察</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 业务部门领导</td>
+            <td>222</td>
+            <td>2.7%</td>
+            <td>0.0%</td>
+            <td>2.3%</td>
+            <td>16.3</td>
+            <td>20.6</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 相关领导审批</td>
+            <td>503</td>
+            <td>5.8%</td>
+            <td>1.4%</td>
+            <td>6.6%</td>
+            <td>30.2</td>
+            <td>21.6</td>
+            <td><span class="badge badge-yellow">正常</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-business">业务</span> 业务审批</td>
+            <td>2689</td>
+            <td>8.3%</td>
+            <td>0.1%</td>
+            <td>4.5%</td>
+            <td>16.1</td>
+            <td>22.4</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="card highlight">
+        <h4>低价值节点警示（value score < 18）</h4>
+            <table>
+              <tr>
+                <th>节点</th>
+                <th>审批次数</th>
+                <th>意见率</th>
+                <th>驳回率</th>
+                <th>盲批率</th>
+                <th>平均耗时(h)</th>
+                <th>价值分</th>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 采购反馈：供方已发货</td>
+                <td>13</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">92.3%</td>
+                <td>1.5</td>
+                <td style="color:var(--red)"><strong>1.5</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 采购反馈：中标结果</td>
+                <td>13</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">92.3%</td>
+                <td>0.1</td>
+                <td style="color:var(--red)"><strong>1.5</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 政委</td>
+                <td>14</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">71.4%</td>
+                <td>1.1</td>
+                <td style="color:var(--red)"><strong>5.7</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 采购反馈：已完成合同签订</td>
+                <td>13</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">69.2%</td>
+                <td>29.9</td>
+                <td style="color:var(--red)"><strong>6.2</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 资产管理员</td>
+                <td>10</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">60.0%</td>
+                <td>0.1</td>
+                <td style="color:var(--red)"><strong>8.0</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 实际需求人</td>
+                <td>17</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">35.3%</td>
+                <td>0.4</td>
+                <td style="color:var(--red)"><strong>12.9</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 相关领导</td>
+                <td>156</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">22.4%</td>
+                <td>4.3</td>
+                <td style="color:var(--red)"><strong>15.5</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 直属主管</td>
+                <td>316</td>
+                <td>0.6%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">22.8%</td>
+                <td>3.1</td>
+                <td style="color:var(--red)"><strong>15.7</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 业务线领导</td>
+                <td>61</td>
+                <td>1.6%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">24.6%</td>
+                <td>5.6</td>
+                <td style="color:var(--red)"><strong>15.7</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> HRBP</td>
+                <td>29</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">20.7%</td>
+                <td>26.8</td>
+                <td style="color:var(--red)"><strong>15.9</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 品管委复审</td>
+                <td>10</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">20.0%</td>
+                <td>2.4</td>
+                <td style="color:var(--red)"><strong>16.0</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 直属leader</td>
+                <td>258</td>
+                <td>2.3%</td>
+                <td>0.8%</td>
+                <td style="color:var(--red)">26.0%</td>
+                <td>3.0</td>
+                <td style="color:var(--red)"><strong>16.0</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 全国渠道负责人</td>
+                <td>26</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">19.2%</td>
+                <td>0.2</td>
+                <td style="color:var(--red)"><strong>16.2</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 党办</td>
+                <td>11</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">18.2%</td>
+                <td>11.8</td>
+                <td style="color:var(--red)"><strong>16.4</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 工作交接人</td>
+                <td>29</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">17.2%</td>
+                <td>3.8</td>
+                <td style="color:var(--red)"><strong>16.6</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 工厂领导审批</td>
+                <td>14</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">14.3%</td>
+                <td>5.0</td>
+                <td style="color:var(--red)"><strong>17.1</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 财务BP审核</td>
+                <td>22</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">13.6%</td>
+                <td>5.2</td>
+                <td style="color:var(--red)"><strong>17.3</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 印控中心审批水印</td>
+                <td>22</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">13.6%</td>
+                <td>2.9</td>
+                <td style="color:var(--red)"><strong>17.3</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 业务第一层审批</td>
+                <td>42</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">11.9%</td>
+                <td>1.7</td>
+                <td style="color:var(--red)"><strong>17.6</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 需求人业务部门领导</td>
+                <td>17</td>
+                <td>0.0%</td>
+                <td>0.0%</td>
+                <td style="color:var(--red)">11.8%</td>
+                <td>0.5</td>
+                <td style="color:var(--red)"><strong>17.6</strong></td>
+              </tr>
+              <tr>
+                <td><span class="tag tag-low">低价值</span> 部门领导审批</td>
+                <td>317</td>
+                <td>0.9%</td>
+                <td>0.3%</td>
+                <td style="color:var(--red)">12.9%</td>
+                <td>5.0</td>
+                <td style="color:var(--red)"><strong>17.9</strong></td>
+              </tr>
+            </table>
+            <p style="font-size:13px;color:var(--red);margin-top:8px;">以上节点既无意见输出、也无驳回记录、盲批率高，存在的意义不明确。建议逐个评估是否可移除或合并。
+            </p>
+      </div>
+
+      <div class="card">
+        <h3>节点审批量 Top 20</h3>
+        <div class="chart-container"><canvas id="chartNodeVolume"></canvas></div>
+      </div>
+
+      <div class="card">
+        <h3>节点价值分布（意见率 vs 盲批率）</h3>
+        <div class="chart-container"><canvas id="chartNodeValue"></canvas></div>
+      </div>
+
+      <div class="card">
+        <h3>自动跳过节点 Top 15（系统自动同意）</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">这些节点因"审批人重复"被系统自动跳过，说明流程设计中同一人被分配了多个角色。</p>
+        <div class="chart-container chart-sm"><canvas id="chartAutoSkip"></canvas></div>
+      </div>
+
+      <div class="card">
+        <h3>同一人在同一流程中重复出现</h3>
+        <p style="font-size:13px;margin-bottom:12px;">以下为同一人以不同角色名出现在同一审批实例中（排除系统自动跳过）的情况：</p>
+        <table>
+          <tr>
+            <th>人员</th>
+            <th>涉及流程数</th>
+            <th>平均出现次数</th>
+            <th>示例角色路径</th>
+          </tr>
+          <tr>
+            <td>Chan Liu 刘婵</td>
+            <td>32</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">部门负责人 → 部门负责人</td>
+          </tr>
+          <tr>
+            <td>徐萌</td>
+            <td>21</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">财务审批 → 结算操作</td>
+          </tr>
+          <tr>
+            <td>高晰然</td>
+            <td>11</td>
+            <td>4.1</td>
+            <td style="font-size:12px;color:var(--muted)">采购反馈：打样效果图 → 采购反馈：中标结果 → 采购反馈：已完成合同签订 → 采购反馈：供方已发货</td>
+          </tr>
+          <tr>
+            <td>李丹</td>
+            <td>7</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">财务审批 → 财务审批</td>
+          </tr>
+          <tr>
+            <td>Christy 李云裳</td>
+            <td>7</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">SAP发起 → 采购提交</td>
+          </tr>
+          <tr>
+            <td>Ian Zhao 赵炎杰</td>
+            <td>7</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">相关领导审批 → 互部综管领导</td>
+          </tr>
+          <tr>
+            <td>严志夫</td>
+            <td>7</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">业务审批 → 业务审批</td>
+          </tr>
+          <tr>
+            <td>陈高铭</td>
+            <td>6</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">一级审批人 → 工作交接人</td>
+          </tr>
+          <tr>
+            <td>李阳</td>
+            <td>4</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">相关领导审批 → 部门审批</td>
+          </tr>
+          <tr>
+            <td>刘家伊</td>
+            <td>4</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">部门审批 → 部门审批</td>
+          </tr>
+          <tr>
+            <td>任冉</td>
+            <td>4</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">综管审批 → 综管审批</td>
+          </tr>
+          <tr>
+            <td>张远</td>
+            <td>4</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">相关领导审批 → 相关领导审批</td>
+          </tr>
+          <tr>
+            <td>宋亮</td>
+            <td>4</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">业务审批 → 业务审批</td>
+          </tr>
+          <tr>
+            <td>王乃嘉</td>
+            <td>4</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">财务BP审批 → 财务BP审批</td>
+          </tr>
+          <tr>
+            <td>Irene Chang 张庭芳</td>
+            <td>4</td>
+            <td>2.0</td>
+            <td style="font-size:12px;color:var(--muted)">部门审批 → 部门审批</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>重复角色组合模式</h3>
+        <table>
+          <tr>
+            <th>角色组合</th>
+            <th>出现次数</th>
+            <th>说明</th>
+          </tr>
+          <tr>
+            <td>部门负责人 → 部门负责人</td>
+            <td>29</td>
+            <td><span class="badge badge-red">完全重复</span></td>
+          </tr>
+          <tr>
+            <td>部门审批 → 部门审批</td>
+            <td>27</td>
+            <td><span class="badge badge-red">完全重复</span></td>
+          </tr>
+          <tr>
+            <td>财务审批 → 结算操作</td>
+            <td>21</td>
+            <td><span class="badge badge-yellow">跨角色重复</span></td>
+          </tr>
+          <tr>
+            <td>业务审批 → 业务审批</td>
+            <td>17</td>
+            <td><span class="badge badge-red">完全重复</span></td>
+          </tr>
+          <tr>
+            <td>采购反馈：打样效果图 → 采购反馈：中标结果 → 采购反馈：已完成合同签订 → 采购反馈：供方已发货</td>
+            <td>12</td>
+            <td><span class="badge badge-yellow">跨角色重复</span></td>
+          </tr>
+          <tr>
+            <td>相关领导审批 → 相关领导审批</td>
+            <td>9</td>
+            <td><span class="badge badge-red">完全重复</span></td>
+          </tr>
+          <tr>
+            <td>财务BP审批 → 财务BP审批</td>
+            <td>8</td>
+            <td><span class="badge badge-red">完全重复</span></td>
+          </tr>
+          <tr>
+            <td>SAP发起 → 采购提交</td>
+            <td>7</td>
+            <td><span class="badge badge-yellow">跨角色重复</span></td>
+          </tr>
+          <tr>
+            <td>一级审批人 → 工作交接人</td>
+            <td>6</td>
+            <td><span class="badge badge-yellow">跨角色重复</span></td>
+          </tr>
+          <tr>
+            <td>财务BP → 财务BP</td>
+            <td>5</td>
+            <td><span class="badge badge-red">完全重复</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 4: 人×角色 -->
+    <div id="tab-people" class="tab-content">
+      <h2>人×角色分析</h2>
+      <p>审批量最大的人员-角色组合，暴露两类问题：(1) 个人审批负担过重；(2) 同一人出现在多个角色，降低效率。</p>
+
+      <div class="card highlight">
+        <h3>刘婵的审批角色分布</h3>
+        <p style="font-size:13px;margin-bottom:12px;">作为部门总经理，刘婵同时承担业务终审和管理层审批两个身份，累计经手超过2,000次审批。</p>
+        <table>
+          <tr>
+            <th>角色</th>
+            <th>审批次数</th>
+            <th>盲批率</th>
+            <th>无意见率</th>
+            <th>平均耗时(h)</th>
+          </tr>
+          <tr>
+            <td>管理层审批</td>
+            <td>588</td>
+            <td>0.5%</td>
+            <td>99.8%</td>
+            <td>13.0</td>
+          </tr>
+          <tr>
+            <td>业务终审</td>
+            <td>433</td>
+            <td>1.2%</td>
+            <td>100.0%</td>
+            <td>12.9</td>
+          </tr>
+          <tr>
+            <td>部门负责人</td>
+            <td>286</td>
+            <td>6.3%</td>
+            <td>100.0%</td>
+            <td>12.1</td>
+          </tr>
+          <tr>
+            <td>一级部门负责人</td>
+            <td>239</td>
+            <td>2.1%</td>
+            <td>100.0%</td>
+            <td>6.8</td>
+          </tr>
+          <tr>
+            <td>部门审批</td>
+            <td>202</td>
+            <td>0.5%</td>
+            <td>100.0%</td>
+            <td>13.3</td>
+          </tr>
+          <tr>
+            <td>管理层</td>
+            <td>170</td>
+            <td>1.2%</td>
+            <td>100.0%</td>
+            <td>8.3</td>
+          </tr>
+          <tr>
+            <td>申请人二级部门负责人</td>
+            <td>141</td>
+            <td>0.0%</td>
+            <td>100.0%</td>
+            <td>13.1</td>
+          </tr>
+          <tr>
+            <td>领导审批</td>
+            <td>113</td>
+            <td>8.8%</td>
+            <td>100.0%</td>
+            <td>3.6</td>
+          </tr>
+          <tr>
+            <td>互部总经理审批</td>
+            <td>108</td>
+            <td>0.9%</td>
+            <td>100.0%</td>
+            <td>8.4</td>
+          </tr>
+        </table>
+        <p style="font-size:13px;color:var(--red);margin-top:8px;">
+          9个不同角色名对应同一人，其中"管理层审批"(588次)与"部门负责人"(286次)和"一级部门负责人"(239次) 存在功能重叠，建议合并统一为1-2个角色节点。</p>
+      </div>
+
+      <div class="card">
+        <h3>审批量 Top 30 人员-角色组合</h3>
+        <div class="chart-container" style="height:500px;"><canvas id="chartPersonRole"></canvas></div>
+      </div>
+
+      <div class="card">
+        <h3>关键审批人负载分析</h3>
+        <table>
+          <tr>
+            <th>人员</th>
+            <th>角色</th>
+            <th>次数</th>
+            <th>盲批率</th>
+            <th>无意见率</th>
+            <th>平均耗时</th>
+            <th>风险评估</th>
+          </tr>
+          <tr>
+            <td>Chan Liu 刘婵</td>
+            <td>管理层审批</td>
+            <td>588</td>
+            <td>0.5%</td>
+            <td>99.8%</td>
+            <td>13.0h</td>
+            <td><span class="badge badge-blue">负载高</span></td>
+          </tr>
+          <tr>
+            <td>Chan Liu 刘婵</td>
+            <td>业务终审</td>
+            <td>433</td>
+            <td>1.2%</td>
+            <td>100.0%</td>
+            <td>12.9h</td>
+            <td><span class="badge badge-blue">负载高</span></td>
+          </tr>
+          <tr>
+            <td>高玉</td>
+            <td>财务BP</td>
+            <td>417</td>
+            <td>4.3%</td>
+            <td>100.0%</td>
+            <td>1.7h</td>
+            <td><span class="badge badge-blue">负载高</span></td>
+          </tr>
+          <tr>
+            <td>谷雨</td>
+            <td>财务复审</td>
+            <td>412</td>
+            <td>4.6%</td>
+            <td>100.0%</td>
+            <td>5.8h</td>
+            <td><span class="badge badge-blue">负载高</span></td>
+          </tr>
+          <tr>
+            <td>Irene Chang 张庭芳</td>
+            <td>商务部门领导</td>
+            <td>326</td>
+            <td>0.6%</td>
+            <td>100.0%</td>
+            <td>27.1h</td>
+            <td><span class="badge badge-red">耗时长</span></td>
+          </tr>
+          <tr>
+            <td>Ian Zhao 赵炎杰</td>
+            <td>业务审批</td>
+            <td>298</td>
+            <td>1.0%</td>
+            <td>100.0%</td>
+            <td>1.6h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>Chan Liu 刘婵</td>
+            <td>部门负责人</td>
+            <td>286</td>
+            <td>6.3%</td>
+            <td>100.0%</td>
+            <td>12.1h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>陈洁实</td>
+            <td>财务初审</td>
+            <td>246</td>
+            <td>0.8%</td>
+            <td>100.0%</td>
+            <td>13.5h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>Chan Liu 刘婵</td>
+            <td>一级部门负责人</td>
+            <td>239</td>
+            <td>2.1%</td>
+            <td>100.0%</td>
+            <td>6.8h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>Cindy Lee 李昕玥</td>
+            <td>商务领导</td>
+            <td>216</td>
+            <td>1.9%</td>
+            <td>99.5%</td>
+            <td>17.8h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>Chan Liu 刘婵</td>
+            <td>部门审批</td>
+            <td>202</td>
+            <td>0.5%</td>
+            <td>100.0%</td>
+            <td>13.3h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>Qiang Song 宋强</td>
+            <td>业务审批</td>
+            <td>193</td>
+            <td>2.6%</td>
+            <td>100.0%</td>
+            <td>6.6h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>冯静</td>
+            <td>财务初审</td>
+            <td>187</td>
+            <td>0.0%</td>
+            <td>100.0%</td>
+            <td>35.0h</td>
+            <td><span class="badge badge-red">耗时长</span></td>
+          </tr>
+          <tr>
+            <td>朱敏</td>
+            <td>财务复审</td>
+            <td>177</td>
+            <td>0.0%</td>
+            <td>100.0%</td>
+            <td>6.5h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>高玉</td>
+            <td>互部财务负责人</td>
+            <td>176</td>
+            <td>4.5%</td>
+            <td>100.0%</td>
+            <td>1.4h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>孟艳利</td>
+            <td>财务BP</td>
+            <td>174</td>
+            <td>4.6%</td>
+            <td>100.0%</td>
+            <td>13.0h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>Chan Liu 刘婵</td>
+            <td>管理层</td>
+            <td>170</td>
+            <td>1.2%</td>
+            <td>100.0%</td>
+            <td>8.3h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>孙思</td>
+            <td>财务BP</td>
+            <td>160</td>
+            <td>8.8%</td>
+            <td>100.0%</td>
+            <td>7.5h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>孙家慧</td>
+            <td>法务审核</td>
+            <td>165</td>
+            <td>3.6%</td>
+            <td>97.0%</td>
+            <td>17.6h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>李丹</td>
+            <td>财务初审</td>
+            <td>153</td>
+            <td>11.8%</td>
+            <td>100.0%</td>
+            <td>5.2h</td>
+            <td><span class="badge badge-yellow">盲批高</span></td>
+          </tr>
+          <tr>
+            <td>Irene Chang 张庭芳</td>
+            <td>业务审批</td>
+            <td>151</td>
+            <td>1.3%</td>
+            <td>100.0%</td>
+            <td>15.5h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>严志夫</td>
+            <td>业务审批</td>
+            <td>144</td>
+            <td>4.2%</td>
+            <td>100.0%</td>
+            <td>9.0h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>Chan Liu 刘婵</td>
+            <td>申请人二级部门负责人</td>
+            <td>141</td>
+            <td>0.0%</td>
+            <td>100.0%</td>
+            <td>13.1h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>刘艺文</td>
+            <td>印控中心审批</td>
+            <td>153</td>
+            <td>0.0%</td>
+            <td>91.5%</td>
+            <td>92.4h</td>
+            <td><span class="badge badge-red">耗时长</span></td>
+          </tr>
+          <tr>
+            <td>宋雨晖</td>
+            <td>法务审核</td>
+            <td>140</td>
+            <td>1.4%</td>
+            <td>100.0%</td>
+            <td>19.9h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>Ian Zhao 赵炎杰</td>
+            <td>互部综管领导</td>
+            <td>139</td>
+            <td>2.9%</td>
+            <td>100.0%</td>
+            <td>1.5h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>赵春磊</td>
+            <td>预算管理</td>
+            <td>132</td>
+            <td>2.3%</td>
+            <td>100.0%</td>
+            <td>1.6h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>陈高铭</td>
+            <td>部门负责人</td>
+            <td>131</td>
+            <td>10.7%</td>
+            <td>100.0%</td>
+            <td>0.7h</td>
+            <td><span class="badge badge-yellow">盲批高</span></td>
+          </tr>
+          <tr>
+            <td>杨雅婷</td>
+            <td>二级财务复审</td>
+            <td>129</td>
+            <td>0.8%</td>
+            <td>100.0%</td>
+            <td>6.1h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+          <tr>
+            <td>高玉</td>
+            <td>互部财务主管</td>
+            <td>127</td>
+            <td>5.5%</td>
+            <td>100.0%</td>
+            <td>3.1h</td>
+            <td><span class="badge badge-green">正常</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>盲批率 Top 15 审批人</h3>
+        <div class="chart-container chart-sm"><canvas id="chartBlindPerson"></canvas></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: 重点流程拆解 -->
+    <div id="tab-cases" class="tab-content">
+      <h2>重点流程逐节点拆解</h2>
+
+      <div class="card highlight">
+        <h3>案例一：合同申请（新）— 最大流量流程</h3>
+        <p style="font-size:13px;margin-bottom:4px;"><span class="badge badge-red">529件</span> <span
+            class="badge badge-yellow">12节点</span> <span class="badge badge-red">11.5天</span></p>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">部门全量约 3,396 件。合同审批是标准化收益最大的流程。</p>
+
+        <h4>典型审批路径</h4>
+        <div class="flow-timeline">
+          <div class="flow-node auto">
+            <div class="node-info">
+              <div class="node-name">创建人</div>
+              <div class="node-person">肖刚 · 无</div>
+            </div>
+            <div class="node-time ">0.0h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">需求人确认</div>
+              <div class="node-person">曹瑞 · 无</div>
+            </div>
+            <div class="node-time ">0.7h</div>
+          </div>
+          <div class="flow-node bottleneck">
+            <div class="node-info">
+              <div class="node-name">商务领导</div>
+              <div class="node-person">蒲贝贝 · 无</div>
+            </div>
+            <div class="node-time slow">12.3天</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">商务领导</div>
+              <div class="node-person">Cindy Lee 李昕玥 · 无</div>
+            </div>
+            <div class="node-time slow">44.6h</div>
+          </div>
+          <div class="flow-node auto">
+            <div class="node-info">
+              <div class="node-name">业务部门领导审批</div>
+              <div class="node-person">李响 · 无</div>
+            </div>
+            <div class="node-time ">0.0h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">业务部门领导</div>
+              <div class="node-person">Song1 Yang 杨淞 · 无</div>
+            </div>
+            <div class="node-time ">0.3h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">商务部门领导</div>
+              <div class="node-person">Irene Chang 张庭芳 · 无</div>
+            </div>
+            <div class="node-time ">21.3h</div>
+          </div>
+          <div class="flow-node bottleneck">
+            <div class="node-info">
+              <div class="node-name">法务审核</div>
+              <div class="node-person">金思含 · 无</div>
+            </div>
+            <div class="node-time slow">11.0天</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">财务BP</div>
+              <div class="node-person">郭圆圆 · 有</div>
+            </div>
+            <div class="node-time slow">28.3h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">管理层审批</div>
+              <div class="node-person">Chan Liu 刘婵 · 无</div>
+            </div>
+            <div class="node-time ">8.4h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">印控中心审批</div>
+              <div class="node-person">马丽丽 · 无</div>
+            </div>
+            <div class="node-time ">14.9h</div>
+          </div>
+        </div>
+
+        <h4>问题诊断</h4>
+        <div class="rec rec-high"><strong>串行瓶颈</strong>商务领导（2层串行，共340h） → 法务审核（264h） → 财务BP（28h） → 管理层审批。法务与财务无依赖关系，应并行。
+        </div>
+        <div class="rec rec-high"><strong>印控中心瓶颈</strong>印控中心审批平均耗时 85.6h（3.6天），中位数 55h（2.3天），是合同流程的单一最大瓶颈。</div>
+        <div class="rec rec-med"><strong>商务领导2层</strong>商务领导（蒲贝贝→李昕玥）+ 商务部门领导（张庭芳）共3层商务审批，是否可压缩为1-2层？</div>
+        <div class="rec rec-med"><strong>业务部门领导 vs 商务部门领导</strong>"业务部门领导审批"和"业务部门领导"两个节点名称相似，功能是否重叠？</div>
+        <div class="rec rec-low"><strong>标准化机会</strong>合同审批量最大（部门3,396件），建议：标准合同（续约、框架内采购）走简化流程（3-5节点），非标合同走完整流程。</div>
+      </div>
+
+      <div class="card highlight">
+        <h3>案例二：互联网清结算付款审批 — 节点最多</h3>
+        <p style="font-size:13px;margin-bottom:4px;"><span class="badge badge-red">433件</span> <span
+            class="badge badge-red">14.3节点</span> <span class="badge badge-yellow">8.9天</span></p>
+
+        <h4>典型审批路径</h4>
+        <div class="flow-timeline">
+          <div class="flow-node auto">
+            <div class="node-info">
+              <div class="node-name">创建人</div>
+              <div class="node-person">Yu6 Zhao 赵宇 · 无</div>
+            </div>
+            <div class="node-time ">0.0h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">财务初审</div>
+              <div class="node-person">陈洁实 · 无</div>
+            </div>
+            <div class="node-time ">0.1h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">财务复审</div>
+              <div class="node-person">谷雨 · 无</div>
+            </div>
+            <div class="node-time ">16.4h</div>
+          </div>
+          <div class="flow-node auto">
+            <div class="node-info">
+              <div class="node-name">业务初审</div>
+              <div class="node-person">Robot 小米机器人 · 有</div>
+            </div>
+            <div class="node-time ">0.0h</div>
+          </div>
+          <div class="flow-node bottleneck">
+            <div class="node-info">
+              <div class="node-name">业务审批</div>
+              <div class="node-person">黄耀瑜 · 无</div>
+            </div>
+            <div class="node-time slow">71.1h</div>
+          </div>
+          <div class="flow-node auto">
+            <div class="node-info">
+              <div class="node-name">业务审批</div>
+              <div class="node-person">Weifeng1 Liu 刘伟锋 · 无</div>
+            </div>
+            <div class="node-time ">0.0h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">业务审批</div>
+              <div class="node-person">余帆 · 无</div>
+            </div>
+            <div class="node-time ">4.2h</div>
+          </div>
+          <div class="flow-node bottleneck">
+            <div class="node-info">
+              <div class="node-name">业务审批</div>
+              <div class="node-person">卢立男 · 无</div>
+            </div>
+            <div class="node-time slow">32.8h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">业务审批</div>
+              <div class="node-person">汤进 · 无</div>
+            </div>
+            <div class="node-time ">10.8h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">业务审批</div>
+              <div class="node-person">Ian Zhao 赵炎杰 · 无</div>
+            </div>
+            <div class="node-time ">0.7h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">业务终审</div>
+              <div class="node-person">Chan Liu 刘婵 · 无</div>
+            </div>
+            <div class="node-time ">4.6h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">财务BP</div>
+              <div class="node-person">王雨琛 · 有</div>
+            </div>
+            <div class="node-time ">22.7h</div>
+          </div>
+          <div class="flow-node auto">
+            <div class="node-info">
+              <div class="node-name">财务BP</div>
+              <div class="node-person">唐泽彦 · 无</div>
+            </div>
+            <div class="node-time ">0.0h</div>
+          </div>
+          <div class="flow-node ">
+            <div class="node-info">
+              <div class="node-name">财务BP</div>
+              <div class="node-person">高玉 · 无</div>
+            </div>
+            <div class="node-time ">1.3h</div>
+          </div>
+        </div>
+
+        <h4>问题诊断</h4>
+        <div class="rec rec-high">
+          <strong>业务审批层级过多</strong>5层业务审批全部串行（黄耀瑜71h→刘伟锋→余帆→卢立男32h→汤进10h→赵炎杰→刘婵），其中100个不同审批人出现在"业务审批"节点，说明此节点是一个"万能容器"。建议拆分为明确的"经办确认"和"业务负责人审批"两层。
+        </div>
+        <div class="rec rec-med"><strong>财务BP 3层串行</strong>财务BP出现3次（王雨琛→唐泽彦→高玉），3个人依次审批同一维度（资源），建议合并为或签1人。</div>
+        <div class="rec rec-med"><strong>财务初审+复审串行</strong>财务初审和财务复审之间是否可改为：初审通过后自动流转到业务线，复审并行进行？</div>
+      </div>
+
+      <div class="card highlight">
+        <h3>案例三：对公付款-通用付款申请流程</h3>
+        <p style="font-size:13px;margin-bottom:4px;"><span class="badge badge-yellow">194件</span> <span
+            class="badge badge-yellow">12.4节点</span> <span class="badge badge-red">11.1天</span> <span
+            class="badge badge-red">92%无意见</span></p>
+
+        <h4>问题诊断</h4>
+        <div class="rec rec-high"><strong>92%无意见率</strong>所有流程中无意见率最高。说明大部分节点只是"走过场"。建议对比清结算流程，将相似付款流程合并标准化。</div>
+        <div class="rec rec-med"><strong>盲批率11.7%</strong>显著高于平均水平，需定位具体盲批节点。</div>
+      </div>
+
+      <div class="card highlight">
+        <h3>案例四：互部费用事前需求审批流（含预算）</h3>
+        <p style="font-size:13px;margin-bottom:4px;"><span class="badge badge-yellow">150件</span> <span
+            class="badge badge-yellow">10.9节点</span> <span class="badge badge-green">6.5天</span> <span
+            class="badge badge-red">149次系统自动跳过</span></p>
+
+        <h4>问题诊断</h4>
+        <div class="rec rec-high">
+          <strong>系统自动跳过149次</strong>几乎每个实例都有1次系统自动跳过（审批人重复），说明流程设计中存在结构性的角色重复。这是最值得优化的"低垂果实"——直接从流程定义中移除重复节点。
+        </div>
+        <div class="rec rec-med"><strong>刘婵双重出现</strong>刘婵在此流程中同时出现在"业务终审"和"管理层审批"/"部门负责人"等多个节点，建议统一为一个终审节点。</div>
+      </div>
+
+    </div>
+
+    <!-- TAB 6: 优化建议 -->
+    <div id="tab-actions" class="tab-content">
+      <h2>优化建议总览</h2>
+
+      <div class="card" style="border-left:3px solid var(--red);">
+        <h3>P0 — 立即行动（预计节省30%+审批时间）</h3>
+
+        <div class="rec rec-high">
+          <strong>1. 合同申请标准化分流</strong>
+          将合同审批分为"标准合同"（续约/框架内/小额）和"非标合同"两条路径。标准合同：经办→法务快审→财务BP→终审，4节点、3天完成。非标合同保留完整链路。预计可将60%+的合同审批时间减半。（原则②节点最少化 +
+          原则④分级授权）
+        </div>
+
+        <div class="rec rec-high">
+          <strong>2. 法务-财务并行化</strong>
+          合同申请中，法务审核（avg 31h）和财务BP审批（avg 27h）当前串行。两者审批维度不同（合规 vs 资源），不存在依赖关系。改为并行后，预计合同流程端到端缩短 1-2 天。（原则③串行改并行）
+        </div>
+
+        <div class="rec rec-high">
+          <strong>3. 清结算付款业务审批压缩</strong>
+          5层串行业务审批（seq 5-10）压缩为2层：经办人确认 + 业务负责人终审。当前100个不同人出现在"业务审批"这一个节点名下，说明节点定义模糊。（原则①权责对等）
+        </div>
+
+        <div class="rec rec-high">
+          <strong>4. 移除结构性重复节点</strong>
+          互部费用流程149次系统自动跳过，对公付款24次。直接从流程模板中移除这些必定被跳过的节点，简化流程定义。（原则②节点最少化）
+        </div>
+      </div>
+
+      <div class="card" style="border-left:3px solid var(--orange);">
+        <h3>P1 — 短期优化（1-2个月内）</h3>
+
+        <div class="rec rec-med">
+          <strong>5. 统一刘婵的审批角色</strong>
+          9个角色名对应同一人（管理层审批/业务终审/部门负责人/一级部门负责人/部门审批/管理层/申请人二级部门负责人/领导审批/互部总经理审批），建议统一为"部门总经理审批"1个节点。减少流程中同一人重复出现的概率。
+        </div>
+
+        <div class="rec rec-med">
+          <strong>6. 评估低价值节点存废</strong>
+          直属主管（value 15.7, 盲批22.8%）、直属leader（value 16.0, 盲批26.2%）、相关领导（value 15.5,
+          盲批22.4%）：这些节点从未驳回、几乎不留意见，无法回答"他在审什么"。建议逐个评估是否可移除或改为知会。（原则①权责对等）
+        </div>
+
+        <div class="rec rec-med">
+          <strong>7. 财务审批层级精简</strong>
+          财务BP（3人串行→1人或签）、财务初审+复审（评估是否可合并）。当前部分流程有财务初审→财务复审→二级财务复审→财务BP共4层财务审批，同一维度（资源）被反复审核。
+        </div>
+
+        <div class="rec rec-med">
+          <strong>8. 印控中心提速</strong>
+          合同流程中印控中心平均耗时85.6h（3.6天），是单一最大瓶颈。建议：(a)增加印控审批人力或设置SLA；(b)标准合同用电子签章自动盖印。
+        </div>
+      </div>
+
+      <div class="card" style="border-left:3px solid var(--blue);">
+        <h3>P2 — 中期改进</h3>
+
+        <div class="rec rec-low">
+          <strong>9. 分级授权体系建设</strong>
+          补充金额数据后，建立分级审批矩阵：小额（<1万）→ 2节点快审；中额（1-10万）→ 标准流程；大额（>10万）→ 完整流程。避免3000元差旅也走10个节点。（原则④分级授权）
+        </div>
+
+        <div class="rec rec-low">
+          <strong>10. "业务审批"节点拆分标准化</strong>
+          "业务审批"节点有2,687次、121个不同审批人，是一个职责不清的"万能容器"。建议按实际职责拆分为明确的角色名（如"经办确认""业务主管审批""业务VP审批"），使每个节点名称直接对应审批维度。
+        </div>
+
+        <div class="rec rec-low">
+          <strong>11. 建立审批健康度仪表盘</strong>
+          将盲批率、无意见率、节点耗时、重复出现等指标纳入月度监控，持续跟踪优化效果。
+        </div>
+      </div>
+
+      <div class="summary-box" style="margin-top:24px;">
+        <h3>预期收益估算</h3>
+        <p style="font-size:14px;">
+          基于头部4类流程（占46%）的优化：串并行改造节省约 <strong>1-2天/单</strong>，
+          节点精简减少约 <strong>3-4个节点/流程</strong>，
+          标准化分流可使60%+合同走快速通道。
+          综合预估，头部流程平均审批周期可从当前 <strong>10天</strong> 降至 <strong>5-6天</strong>，
+          审批节点从平均 <strong>12个</strong> 降至 <strong>7-8个</strong>。
+        </p>
+        <p style="font-size:13px;color:var(--text);margin-top:8px;">
+          ⚠ 以上估算基于流程结构分析，实际效果需结合金额维度数据和业务方确认。
+        </p>
+      </div>
+
+    </div>
+
+    <!-- TAB 7: 落地方案 -->
+    <div id="tab-plan" class="tab-content">
+      <h2>优化落地方案</h2>
+      <p style="margin-bottom:20px;">基于诊断结果与对齐讨论，以下为11条优化建议的具体落地方案，含优化前后对比、实施步骤、负责人建议和预期收益。</p>
+
+      <!-- Gantt-style overview -->
+      <div class="card" style="border-left:3px solid var(--blue);">
+        <h3>实施路线图</h3>
+        <div style="overflow-x:auto;">
+          <table style="min-width:800px;">
+            <tr>
+              <th style="width:30px;">#</th>
+              <th style="width:220px;">优化项</th>
+              <th>优先级</th>
+              <th>第1-2周</th>
+              <th>第3-4周</th>
+              <th>第5-8周</th>
+              <th>第9-12周</th>
+              <th>协调方</th>
+            </tr>
+            <tr>
+              <td>1</td>
+              <td>合同申请标准化分流</td>
+              <td><span class="badge badge-red">P0</span></td>
+              <td style="background:#fce8e6;">定义分流标准</td>
+              <td style="background:#fce8e6;">设计双通道</td>
+              <td style="background:#fce8e6;">BPM配置上线</td>
+              <td style="background:#e6f4ea;">监控优化</td>
+              <td>综管+法务+BPM</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>法务-财务并行化</td>
+              <td><span class="badge badge-red">P0</span></td>
+              <td style="background:#fce8e6;">方案确认</td>
+              <td style="background:#fce8e6;">BPM改造</td>
+              <td style="background:#e6f4ea;">上线验证</td>
+              <td></td>
+              <td>BPM团队</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>清结算业务审批压缩</td>
+              <td><span class="badge badge-red">P0</span></td>
+              <td style="background:#fce8e6;">梳理角色</td>
+              <td style="background:#fce8e6;">设计2层结构</td>
+              <td style="background:#fce8e6;">BPM配置</td>
+              <td style="background:#e6f4ea;">监控</td>
+              <td>业务+BPM</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>移除结构性重复节点</td>
+              <td><span class="badge badge-red">P0</span></td>
+              <td style="background:#fce8e6;">BPM直接修改</td>
+              <td style="background:#e6f4ea;">验证</td>
+              <td></td>
+              <td></td>
+              <td>BPM团队</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>统一GM审批角色</td>
+              <td><span class="badge badge-yellow">P1</span></td>
+              <td></td>
+              <td style="background:#fef7e0;">梳理角色映射</td>
+              <td style="background:#fef7e0;">BPM配置</td>
+              <td style="background:#e6f4ea;">验证</td>
+              <td>BPM团队</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>低价值节点改知会</td>
+              <td><span class="badge badge-yellow">P1</span></td>
+              <td></td>
+              <td style="background:#fef7e0;">节点评审</td>
+              <td style="background:#fef7e0;">改配置</td>
+              <td style="background:#e6f4ea;">观察1月</td>
+              <td>各业务线</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>财务审批层级精简</td>
+              <td><span class="badge badge-yellow">P1</span></td>
+              <td></td>
+              <td></td>
+              <td style="background:#fef7e0;">财务内部对齐</td>
+              <td style="background:#fef7e0;">调整上线</td>
+              <td>财务部</td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td>印控中心提速</td>
+              <td><span class="badge badge-yellow">P1</span></td>
+              <td></td>
+              <td style="background:#fef7e0;">设SLA机制</td>
+              <td style="background:#fef7e0;">标准合同自动盖章</td>
+              <td style="background:#e6f4ea;">监控</td>
+              <td>印控中心</td>
+            </tr>
+            <tr>
+              <td>9</td>
+              <td>分级授权体系</td>
+              <td><span class="badge badge-blue">P2</span></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td style="background:#e8f0fe;">补金额数据+设阈值</td>
+              <td>财务+BPM</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td>"业务审批"节点拆分</td>
+              <td><span class="badge badge-blue">P2</span></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td style="background:#e8f0fe;">标准化角色名</td>
+              <td>综管+业务</td>
+            </tr>
+            <tr>
+              <td>11</td>
+              <td>审批健康度仪表盘</td>
+              <td><span class="badge badge-blue">P2</span></td>
+              <td></td>
+              <td></td>
+              <td style="background:#e8f0fe;">指标定义</td>
+              <td style="background:#e8f0fe;">仪表盘开发</td>
+              <td>BPM+数据</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ========== P0 DETAILS ========== -->
+      <h3 style="margin-top:36px;color:var(--red);">P0 — 立即行动</h3>
+
+      <!-- P0-1 -->
+      <div class="card" style="border-top:2px solid var(--red);">
+        <h3>方案1：合同申请标准化分流 <span class="badge badge-red">P0</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">对应原则：②节点最少化 + ④分级授权 | 审批维度：合规+资源+风险</p>
+
+        <h4>现状问题</h4>
+        <p>
+          所有合同（部门3,396件/180天）走同一条12节点链路，平均11.5天。续约合同、框架内采购、模板合同与全新非标合同走完全相同的审批链，大量节点对标准合同而言是冗余的。<strong>组织缺乏合同标准化、线上化意识，需要通过流程设计主动推动。</strong>
+        </p>
+
+        <div class="two-col" style="margin:20px 0;">
+          <div class="card" style="background:#fce8e6;margin:0;">
+            <h4 style="color:var(--text);">优化前：合同审批（所有合同）</h4>
+            <div style="font-size:13px;line-height:2;">
+              <span class="badge badge-blue">发起人</span> →
+              <span class="badge badge-yellow">需求人确认</span> →
+              <span class="badge badge-green">商务领导 ×2</span> →
+              <span class="badge badge-green">业务部门领导</span> →
+              <span class="badge badge-green">商务部门领导</span> →
+              <span class="badge badge-blue">法务审核</span> →
+              <span class="badge badge-yellow">财务BP</span> →
+              <span class="badge badge-yellow">管理层审批</span> →
+              <span class="badge badge-blue">印控中心</span>
+              <br><strong>12节点 · 11.5天 · 串行</strong>
+            </div>
+          </div>
+          <div style="margin:0;">
+            <div class="card" style="background:#e6f4ea;margin:0 0 8px;">
+              <h4 style="color:var(--green);">优化后A：标准合同快速通道</h4>
+              <div style="font-size:13px;line-height:2;">
+                <span class="badge badge-blue">发起人</span> →
+                <span class="badge badge-green">商务确认</span> →
+                <span class="badge badge-blue">法务快审(模板可跳过)</span> ∥ <span class="badge badge-yellow">财务BP</span> →
+                <span class="badge badge-yellow">部门终审</span> →
+                <span class="badge badge-blue">电子盖章</span>
+                <br><strong>4-5节点 · 目标3天 · 法务财务并行</strong>
+              </div>
+            </div>
+            <div class="card" style="background:#fef7e0;margin:0;">
+              <h4 style="color:var(--text);">优化后B：非标合同完整通道</h4>
+              <div style="font-size:13px;line-height:2;">
+                <span class="badge badge-blue">发起人</span> →
+                <span class="badge badge-green">商务领导</span> →
+                [<span class="badge badge-blue">法务审核</span> ∥ <span class="badge badge-yellow">财务BP</span>] →
+                <span class="badge badge-yellow">管理层审批</span> →
+                <span class="badge badge-blue">印控中心</span>
+                <br><strong>7-8节点 · 目标7天 · 并行化</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h4>分流标准（BPM自动判定）</h4>
+        <table>
+          <tr>
+            <th>条件</th>
+            <th>走哪条通道</th>
+            <th>说明</th>
+          </tr>
+          <tr>
+            <td>续约合同 且 条款无变更</td>
+            <td><span class="badge badge-green">快速</span></td>
+            <td>模板不变，法务快审或跳过</td>
+          </tr>
+          <tr>
+            <td>框架协议内的执行订单</td>
+            <td><span class="badge badge-green">快速</span></td>
+            <td>框架已审，执行层面确认即可</td>
+          </tr>
+          <tr>
+            <td>使用公司标准模板</td>
+            <td><span class="badge badge-green">快速</span></td>
+            <td>模板已经过法务审核</td>
+          </tr>
+          <tr>
+            <td>新供应商/新业务模式</td>
+            <td><span class="badge badge-yellow">完整</span></td>
+            <td>需法务逐条审核</td>
+          </tr>
+          <tr>
+            <td>非标条款/大额合同</td>
+            <td><span class="badge badge-yellow">完整</span></td>
+            <td>风险较高，保留完整链路</td>
+          </tr>
+        </table>
+
+        <h4>关键行动</h4>
+        <div class="rec rec-high">
+          <strong>推动意识转变</strong>以此诊断报告数据为依据（3,396件、11.5天），向业务线传达：合同标准化不是限制灵活性，而是把精力集中在真正需要判断的非标合同上。标准合同走快速通道=更快完成业务。
+        </div>
+        <div class="rec rec-high"><strong>建立标准合同模板库</strong>由法务牵头，梳理高频合同类型（续约、采购、服务），建立线上化模板库。使用模板的合同自动进入快速通道。</div>
+        <div class="rec rec-med"><strong>BPM分流字段</strong>在合同发起页增加"合同类型"选择字段（标准/非标），系统根据选择自动路由到对应审批链。</div>
+
+        <div class="summary-box">
+          <strong>预期收益：</strong>假设60%合同为标准合同，快速通道从11.5天→3天，非标从11.5天→7天。加权平均审批周期：0.6×3 + 0.4×7 =
+          <strong>4.6天</strong>（当前11.5天，节省60%）。部门180天可节省约 <strong>3,396 × 60% × 8.5天 = 17,300人天</strong> 审批等待时间。
+        </div>
+      </div>
+
+      <!-- P0-2 -->
+      <div class="card" style="border-top:2px solid var(--red);">
+        <h3>方案2：法务-财务并行化 <span class="badge badge-red">P0</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">对应原则：③串行改并行 | 审批维度：合规(法务) ∥ 资源(财务)，互不依赖</p>
+
+        <h4>并行化原理</h4>
+        <p>法务审核审的是"合规风险"（条款是否合规），财务BP审的是"资源匹配"（预算是否充足）。两者互不依赖——法务不需要等财务的结论，财务也不需要等法务的结论。串行排列纯粹是流程设计的历史遗留。</p>
+
+        <div class="two-col" style="margin:16px 0;">
+          <div class="card" style="background:#fce8e6;margin:0;">
+            <h4 style="color:var(--text);">优化前（串行）</h4>
+            <div style="font-size:13px;">
+              商务领导 → <strong>法务审核(31h)</strong> → <strong>财务BP(27h)</strong> → 管理层<br>
+              关键路径：31h + 27h = <strong>58h</strong>
+            </div>
+          </div>
+          <div class="card" style="background:#e6f4ea;margin:0;">
+            <h4 style="color:var(--green);">优化后（并行）</h4>
+            <div style="font-size:13px;">
+              商务领导 → [<strong>法务审核(31h)</strong> ∥ <strong>财务BP(27h)</strong>] → 管理层<br>
+              关键路径：max(31h,27h) = <strong>31h</strong>
+            </div>
+          </div>
+        </div>
+
+        <h4>适用范围</h4>
+        <table>
+          <tr>
+            <th>流程</th>
+            <th>可并行的节点对</th>
+            <th>预计节省</th>
+          </tr>
+          <tr>
+            <td>合同申请</td>
+            <td>法务审核 ∥ 财务BP</td>
+            <td>~27h（1天+）</td>
+          </tr>
+          <tr>
+            <td>清结算付款</td>
+            <td>财务初审/复审 ∥ 业务审批（部分）</td>
+            <td>~16h</td>
+          </tr>
+          <tr>
+            <td>互部费用</td>
+            <td>综管审批 ∥ 财务BP</td>
+            <td>~12h</td>
+          </tr>
+        </table>
+
+        <h4>实施方式</h4>
+        <div class="rec rec-high"><strong>BPM并行网关</strong>在流程设计器中，将法务和财务节点改为并行分支（Parallel
+          Gateway）。两个分支同时启动，全部完成后汇合到下一节点。这是BPM引擎的标准功能，无需定制开发。</div>
+
+        <div class="summary-box">
+          <strong>预期收益：</strong>合同流程节省约1天/单。按529件×1天 = <strong>529天</strong>审批等待时间/180天。
+        </div>
+      </div>
+
+      <!-- P0-3 -->
+      <div class="card" style="border-top:2px solid var(--red);">
+        <h3>方案3：清结算付款业务审批压缩 <span class="badge badge-red">P0</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">对应原则：①权责对等 + ②节点最少化 | 审批维度：业务判断</p>
+
+        <div class="two-col" style="margin:16px 0;">
+          <div class="card" style="background:#fce8e6;margin:0;">
+            <h4 style="color:var(--text);">优化前：5层业务审批串行</h4>
+            <div style="font-size:12px;line-height:2.2;">
+              创建人 → 财务初审 → 财务复审 → 业务初审(机器人) →<br>
+              <span class="badge badge-yellow">业务审批(黄耀瑜)</span> 71h →
+              <span class="badge badge-yellow">业务审批(刘伟锋)</span> 0h →
+              <span class="badge badge-yellow">业务审批(余帆)</span> 4h →
+              <span class="badge badge-yellow">业务审批(卢立男)</span> 33h →
+              <span class="badge badge-yellow">业务审批(汤进)</span> 11h →
+              <span class="badge badge-yellow">业务审批(赵炎杰)</span> 1h →
+              业务终审(刘婵) → 财务BP ×3<br>
+              <strong>14节点 · 5层"业务审批" · 100个不同审批人共用一个节点名</strong>
+            </div>
+          </div>
+          <div class="card" style="background:#e6f4ea;margin:0;">
+            <h4 style="color:var(--green);">优化后：2层业务审批</h4>
+            <div style="font-size:12px;line-height:2.2;">
+              创建人 → 财务初审 → [业务初审(机器人) ∥ 财务复审] →<br>
+              <span class="badge badge-green">经办确认(直属负责人)</span> →
+              <span class="badge badge-green">业务负责人审批(有决策权)</span> →
+              业务终审(刘婵) → 财务BP(或签1人)<br>
+              <strong>9节点 · 2层业务审批 · 角色名明确</strong>
+            </div>
+          </div>
+        </div>
+
+        <h4>关键变更</h4>
+        <div class="rec rec-high">
+          <strong>"业务审批"拆分为明确角色</strong>当前"业务审批"是万能容器（121人共用），无法回答"谁在审什么"。拆分为"经办确认"（确认业务真实性）和"业务负责人审批"（做决策判断）。每个节点对应明确的审批维度。
+        </div>
+        <div class="rec rec-med"><strong>财务BP 3人串行→或签1人</strong>当前3个财务BP依次审批同一维度（资源），改为任一财务BP审批即通过。</div>
+      </div>
+
+      <!-- P0-4 -->
+      <div class="card" style="border-top:2px solid var(--red);">
+        <h3>方案4：移除结构性重复节点 <span class="badge badge-red">P0</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">对应原则：②节点最少化 | 零成本改动</p>
+
+        <table>
+          <tr>
+            <th>流程</th>
+            <th>重复现象</th>
+            <th>自动跳过次数</th>
+            <th>处理方式</th>
+          </tr>
+          <tr>
+            <td>互部费用</td>
+            <td>同一人出现在业务终审+管理层审批</td>
+            <td>149次</td>
+            <td>合并为1个终审节点</td>
+          </tr>
+          <tr>
+            <td>对公付款</td>
+            <td>角色重叠导致自动跳过</td>
+            <td>24次</td>
+            <td>移除重复节点</td>
+          </tr>
+          <tr>
+            <td>内部领用</td>
+            <td>资产领用人审批自动跳过</td>
+            <td>269次</td>
+            <td>重新设计节点条件</td>
+          </tr>
+          <tr>
+            <td>其他流程</td>
+            <td>部门负责人→部门负责人(29次)</td>
+            <td>—</td>
+            <td>合并同名节点</td>
+          </tr>
+        </table>
+        <div class="rec rec-high">
+          <strong>实施：BPM管理员直接修改</strong>在流程设计器中删除或合并重复节点。不影响审批结果（本来就自动跳过），只是让流程定义更干净。预计1-2天即可完成全部修改。
+        </div>
+      </div>
+
+      <!-- ========== P1 DETAILS ========== -->
+      <h3 style="margin-top:36px;color:var(--orange);">P1 — 短期优化（1-2个月）</h3>
+
+      <!-- P1-5 -->
+      <div class="card" style="border-top:2px solid var(--orange);">
+        <h3>方案5：统一GM审批角色 <span class="badge badge-yellow">P1</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">对应原则：①权责对等 + ②节点最少化</p>
+
+        <h4>现状：9个角色名 → 同一人</h4>
+        <table style="font-size:12px;">
+          <tr>
+            <th>当前角色名</th>
+            <th>审批次数</th>
+            <th>审批维度</th>
+            <th>合并方向</th>
+          </tr>
+          <tr>
+            <td>管理层审批</td>
+            <td>588</td>
+            <td>资源</td>
+            <td rowspan="4" style="vertical-align:middle;background:#e6f4ea;"><strong>→ 部门总经理-资源审批</strong></td>
+          </tr>
+          <tr>
+            <td>管理层</td>
+            <td>170</td>
+            <td>资源</td>
+          </tr>
+          <tr>
+            <td>部门审批</td>
+            <td>202</td>
+            <td>资源</td>
+          </tr>
+          <tr>
+            <td>申请人二级部门负责人</td>
+            <td>141</td>
+            <td>资源</td>
+          </tr>
+          <tr>
+            <td>业务终审</td>
+            <td>433</td>
+            <td>业务判断</td>
+            <td rowspan="3" style="vertical-align:middle;background:#e8f0fe;"><strong>→ 部门总经理-业务终审</strong></td>
+          </tr>
+          <tr>
+            <td>部门负责人</td>
+            <td>286</td>
+            <td>业务判断</td>
+          </tr>
+          <tr>
+            <td>一级部门负责人</td>
+            <td>239</td>
+            <td>业务判断</td>
+          </tr>
+          <tr>
+            <td>领导审批</td>
+            <td>113</td>
+            <td>通用</td>
+            <td rowspan="2" style="vertical-align:middle;background:#f1f3f4;">按流程归入上述两类之一</td>
+          </tr>
+          <tr>
+            <td>互部总经理审批</td>
+            <td>108</td>
+            <td>通用</td>
+          </tr>
+        </table>
+
+        <p style="font-size:13px;margin-top:12px;">
+          <strong>注意：</strong>BPM系统按角色配置审批人，需要确认角色合并后，权限映射是否正确。建议先在1-2个流程试点，验证后推广。
+        </p>
+      </div>
+
+      <!-- P1-6 -->
+      <div class="card" style="border-top:2px solid var(--orange);">
+        <h3>方案6：低价值节点 → 改为知会 <span class="badge badge-yellow">P1</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">对应原则：①权责对等——无法回答"他审什么"的节点不应存在</p>
+
+        <table>
+          <tr>
+            <th>节点</th>
+            <th>审批次数</th>
+            <th>盲批率</th>
+            <th>驳回率</th>
+            <th>意见率</th>
+            <th>价值分</th>
+            <th>处理方式</th>
+          </tr>
+          <tr>
+            <td>直属主管</td>
+            <td>316</td>
+            <td style="color:var(--red)">22.8%</td>
+            <td>0%</td>
+            <td>0.6%</td>
+            <td>15.7</td>
+            <td><span class="badge badge-yellow">→ 知会</span></td>
+          </tr>
+          <tr>
+            <td>直属leader</td>
+            <td>258</td>
+            <td style="color:var(--red)">26.2%</td>
+            <td>0.8%</td>
+            <td>2.3%</td>
+            <td>16.0</td>
+            <td><span class="badge badge-yellow">→ 知会</span></td>
+          </tr>
+          <tr>
+            <td>相关领导</td>
+            <td>156</td>
+            <td style="color:var(--red)">22.4%</td>
+            <td>0%</td>
+            <td>0%</td>
+            <td>15.5</td>
+            <td><span class="badge badge-yellow">→ 知会</span></td>
+          </tr>
+          <tr>
+            <td>政委</td>
+            <td>14</td>
+            <td style="color:var(--red)">71.4%</td>
+            <td>0%</td>
+            <td>0%</td>
+            <td>5.7</td>
+            <td><span class="badge badge-red">→ 移除</span></td>
+          </tr>
+          <tr>
+            <td>HRBP</td>
+            <td>29</td>
+            <td style="color:var(--red)">20.7%</td>
+            <td>0%</td>
+            <td>0%</td>
+            <td>15.9</td>
+            <td><span class="badge badge-yellow">→ 知会</span></td>
+          </tr>
+        </table>
+
+        <h4>实施步骤</h4>
+        <div class="rec rec-med"><strong>第一步：改为知会（不阻塞流程）</strong>BPM中将这些节点从"审批节点"改为"抄送/知会节点"。审批人仍能看到流程信息，但不再卡住流程。</div>
+        <div class="rec rec-low"><strong>第二步：观察1个月</strong>如果知会后从未有人主动反馈问题，则在下一轮优化中直接移除该节点。</div>
+      </div>
+
+      <!-- P1-7 -->
+      <div class="card" style="border-top:2px solid var(--orange);">
+        <h3>方案7：财务审批层级精简 <span class="badge badge-yellow">P1</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">对应原则：①权责对等 + ②节点最少化 | 同一维度（资源）不应反复审核</p>
+
+        <div class="two-col" style="margin:16px 0;">
+          <div class="card" style="background:#fce8e6;margin:0;">
+            <h4 style="color:var(--text);">优化前：最多4层财务审批</h4>
+            <div style="font-size:13px;">
+              财务初审(意见率13.3%) → 财务复审(意见率0.3%) → 二级财务复审(意见率0%) → 财务BP(意见率40.2%)
+              <br><strong>4个财务节点串行审同一个"资源"维度</strong>
+            </div>
+          </div>
+          <div class="card" style="background:#e6f4ea;margin:0;">
+            <h4 style="color:var(--green);">优化后：2层财务审批</h4>
+            <div style="font-size:13px;">
+              财务初审(合并复审职能) → 财务BP<br>
+              大额增加：→ 财务总监<br>
+              <strong>2-3个财务节点，按金额分级</strong>
+            </div>
+          </div>
+        </div>
+
+        <table>
+          <tr>
+            <th>节点</th>
+            <th>意见率</th>
+            <th>驳回率</th>
+            <th>判断</th>
+            <th>方案</th>
+          </tr>
+          <tr>
+            <td>财务初审</td>
+            <td>13.3%</td>
+            <td>0.2%</td>
+            <td><span class="badge badge-green">在工作</span></td>
+            <td>保留，合并复审职能</td>
+          </tr>
+          <tr>
+            <td>财务复审</td>
+            <td>0.3%</td>
+            <td>0%</td>
+            <td><span class="badge badge-red">没在工作</span></td>
+            <td>合并到初审，或改为抽检</td>
+          </tr>
+          <tr>
+            <td>二级财务复审</td>
+            <td>0%</td>
+            <td>0%</td>
+            <td><span class="badge badge-red">没在工作</span></td>
+            <td>移除，按金额触发财务总监</td>
+          </tr>
+          <tr>
+            <td>财务BP</td>
+            <td>40.2%</td>
+            <td>0.5%</td>
+            <td><span class="badge badge-green">在工作</span></td>
+            <td>保留，多人串行→或签1人</td>
+          </tr>
+          <tr>
+            <td>财务BP审批</td>
+            <td>63.9%</td>
+            <td>8.8%</td>
+            <td><span class="badge badge-green">高价值</span></td>
+            <td>保留</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- P1-8 -->
+      <div class="card" style="border-top:2px solid var(--orange);">
+        <h3>方案8：印控中心提速 <span class="badge badge-yellow">P1</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">合同流程单一最大瓶颈：avg 85.6h（3.6天），中位数55h（2.3天）</p>
+
+        <table>
+          <tr>
+            <th>措施</th>
+            <th>时间框架</th>
+            <th>预期效果</th>
+          </tr>
+          <tr>
+            <td><strong>设SLA机制</strong>：24小时内必须处理，超时自动升级提醒</td>
+            <td>2周内</td>
+            <td>中位数从55h→24h</td>
+          </tr>
+          <tr>
+            <td><strong>标准合同电子签章</strong>：模板合同自动盖章，无需人工审批</td>
+            <td>1-2个月</td>
+            <td>标准合同印控节点归零</td>
+          </tr>
+          <tr>
+            <td><strong>评估人力</strong>：7个审批人是否产能不足</td>
+            <td>持续</td>
+            <td>如需增加人手</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- ========== P2 DETAILS ========== -->
+      <h3 style="margin-top:36px;color:var(--blue);">P2 — 中期改进（2-3个月）</h3>
+
+      <!-- P2-9 -->
+      <div class="card" style="border-top:2px solid var(--blue);">
+        <h3>方案9：分级授权体系 <span class="badge badge-blue">P2</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">对应原则：④分级授权——小事不应走完整审批链</p>
+
+        <table>
+          <tr>
+            <th>级别</th>
+            <th>条件</th>
+            <th>审批链</th>
+            <th>节点数</th>
+            <th>目标时长</th>
+          </tr>
+          <tr style="background:#e6f4ea;">
+            <td><strong>快速</strong></td>
+            <td>金额 &lt;1万 或 标准化事项</td>
+            <td>经办 → 直属负责人 → 财务确认</td>
+            <td>3</td>
+            <td>1天</td>
+          </tr>
+          <tr>
+            <td><strong>标准</strong></td>
+            <td>金额 1-10万</td>
+            <td>经办 → 业务审批 → 财务BP → 部门终审</td>
+            <td>5</td>
+            <td>3天</td>
+          </tr>
+          <tr style="background:#fef7e0;">
+            <td><strong>完整</strong></td>
+            <td>金额 &gt;10万 或 非标</td>
+            <td>完整链路（优化后版本）</td>
+            <td>8-10</td>
+            <td>5-7天</td>
+          </tr>
+        </table>
+
+        <div class="rec rec-med"><strong>前置条件</strong>需将审批金额数据接入BPM，作为自动分流的判断依据。建议优先在合同申请和付款流程中试点。</div>
+      </div>
+
+      <!-- P2-10 -->
+      <div class="card" style="border-top:2px solid var(--blue);">
+        <h3>方案10："业务审批"节点拆分标准化 <span class="badge badge-blue">P2</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">对应原则：①权责对等——每个节点名称直接对应审批维度</p>
+
+        <table>
+          <tr>
+            <th>当前节点名</th>
+            <th>问题</th>
+            <th>拆分为</th>
+            <th>对应维度</th>
+          </tr>
+          <tr>
+            <td rowspan="3">"业务审批"<br>(2,687次, 121人)</td>
+            <td rowspan="3">万能容器<br>职责不清</td>
+            <td>经办确认</td>
+            <td>确认业务真实性</td>
+          </tr>
+          <tr>
+            <td>业务主管审批</td>
+            <td>业务判断（二级部门负责人）</td>
+          </tr>
+          <tr>
+            <td>业务VP审批</td>
+            <td>重大决策（一级部门负责人）</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- P2-11 -->
+      <div class="card" style="border-top:2px solid var(--blue);">
+        <h3>方案11：审批健康度仪表盘 <span class="badge badge-blue">P2</span></h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">持续监控优化效果，防止"优化后退化"</p>
+
+        <table>
+          <tr>
+            <th>指标</th>
+            <th>当前值</th>
+            <th>目标值</th>
+            <th>监控频率</th>
+          </tr>
+          <tr>
+            <td>盲批率</td>
+            <td style="color:var(--red)">7.2%</td>
+            <td>&lt;5%</td>
+            <td>月度</td>
+          </tr>
+          <tr>
+            <td>无意见率</td>
+            <td style="color:var(--red)">83.4%</td>
+            <td>&lt;70%</td>
+            <td>月度</td>
+          </tr>
+          <tr>
+            <td>平均节点数</td>
+            <td style="color:var(--orange)">10.0</td>
+            <td>&lt;8</td>
+            <td>月度</td>
+          </tr>
+          <tr>
+            <td>平均审批周期</td>
+            <td style="color:var(--orange)">6.1天</td>
+            <td>&lt;4天</td>
+            <td>月度</td>
+          </tr>
+          <tr>
+            <td>同人重复率</td>
+            <td style="color:var(--orange)">207次</td>
+            <td>&lt;50次</td>
+            <td>月度</td>
+          </tr>
+        </table>
+        <div class="rec rec-low"><strong>数据来源</strong>直接从BPM API取数（本次分析已验证数据可获取性），定时任务生成月度报告。</div>
+      </div>
+
+      <!-- Overall summary -->
+      <div class="summary-box" style="margin-top:32px;">
+        <h3>综合预期收益</h3>
+        <div class="kpi-row" style="margin:16px 0;">
+          <div class="kpi success">
+            <div class="number">-40%</div>
+            <div class="label">平均审批周期</div>
+          </div>
+          <div class="kpi success">
+            <div class="number">-30%</div>
+            <div class="label">平均审批节点</div>
+          </div>
+          <div class="kpi success">
+            <div class="number">60%+</div>
+            <div class="label">合同走快速通道</div>
+          </div>
+          <div class="kpi success">
+            <div class="number">2周</div>
+            <div class="label">P0最快落地时间</div>
+          </div>
+        </div>
+        <p style="font-size:14px;color:var(--text);">
+          回到核心论断——"好的审批流应该是：用最少的节点、最短的时间，确保合规、资源、风险三个维度都被有能力的人看过了。"<br><br>
+          11条优化措施的共同目标：把每个流程的节点数从10+降到7-8，把审批周期从10天降到5天，让每一个留在流程中的节点都能清楚回答"他在审什么"。
+        </p>
+      </div>
+
+    </div>
+
+  </div><!-- container end -->
+
+  <script>
+    // Tab switching
+    function switchTab(name) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+      event.target.classList.add('active');
+      // Trigger chart resize
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+    }
+
+    // Colors
+    const colors = ['#1a73e8', '#ea4335', '#fbbc04', '#34a853', '#ff6d01', '#46bdc6', '#7baaf7', '#f07b72', '#fdd663', '#57bb8a', '#ee675c', '#a142f4', '#24c1e0', '#e37400', '#9334e6'];
+
+    // Chart 1: Priority
+    new Chart(document.getElementById('chartPriority'), {
+      type: 'bar',
+      data: {
+        labels: ["合同申请（新）", "互联网清结算付款审批", "对公付款-通用付款申请流程", "互部费用事前需求审批流（含预算）", "集团定制品赠品管理", "内部领用申请", "离职流程", "印章使用申请（新）2.0", "集团部门费预算申请流程", "印章证照（新）", "国际商业营销部广告业务政策审批", "返点转亿米充值申请", "招聘需求审批", "小米集团-公司法定代表人/股东等人的", "Offer审批"],
+        datasets: [{
+          label: '优先级分数',
+          data: [6070.0, 3859.0, 2160.0, 977.0, 596.0, 367.0, 350.0, 284.0, 273.0, 251.0, 225.0, 179.0, 152.0, 120.0, 112.0],
+          backgroundColor: colors.slice(0, 15)
+        }]
+      },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: '优先级分数 (流量×复杂度)' } } } }
+    });
+
+    // Chart 2: Volume
+    new Chart(document.getElementById('chartVolume'), {
+      type: 'bar',
+      data: {
+        labels: ["合同申请（新）", "互联网清结算付款审批", "对公付款-通用付款申请流程", "互部费用事前需求审批流（含预算", "集团定制品赠品管理", "内部领用申请", "离职流程", "印章使用申请（新）2.0", "集团部门费预算申请流程", "印章证照（新）", "国际商业营销部广告业务政策审批", "返点转亿米充值申请", "招聘需求审批", "小米集团-公司法定代表人/股东", "Offer审批"],
+        datasets: [{
+          label: '流程数量',
+          data: [529, 433, 194, 150, 23, 278, 24, 170, 254, 181, 5, 21, 39, 99, 38],
+          backgroundColor: '#1a73e8'
+        }]
+      },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    // Chart 3: Duration
+    var durData = [{ "name": "国际商业营销部广告业务政策审批", "volume": 5, "avg_nodes": 9.6, "avg_e2e_days": 45.0, "blind_rate": 0.0, "no_comment_rate": 100.0, "sys_auto": 0, "priority": 225.0 }, { "name": "集团定制品赠品管理", "volume": 23, "avg_nodes": 17.3, "avg_e2e_days": 25.9, "blind_rate": 13.5, "no_comment_rate": 92.6, "sys_auto": 0, "priority": 596.0 }, { "name": "离职流程", "volume": 24, "avg_nodes": 9.5, "avg_e2e_days": 14.6, "blind_rate": 8.9, "no_comment_rate": 98.5, "sys_auto": 0, "priority": 350.0 }, { "name": "合同申请（新）", "volume": 529, "avg_nodes": 12.2, "avg_e2e_days": 11.5, "blind_rate": 4.9, "no_comment_rate": 84.2, "sys_auto": 120, "priority": 6070.0 }, { "name": "对公付款-通用付款申请流程", "volume": 194, "avg_nodes": 12.4, "avg_e2e_days": 11.1, "blind_rate": 11.7, "no_comment_rate": 92.0, "sys_auto": 24, "priority": 2160.0 }, { "name": "互联网清结算付款审批", "volume": 433, "avg_nodes": 14.3, "avg_e2e_days": 8.9, "blind_rate": 3.2, "no_comment_rate": 80.7, "sys_auto": 0, "priority": 3859.0 }, { "name": "返点转亿米充值申请", "volume": 21, "avg_nodes": 14.4, "avg_e2e_days": 8.5, "blind_rate": 6.2, "no_comment_rate": 91.3, "sys_auto": 0, "priority": 179.0 }, { "name": "互部费用事前需求审批流（含预算）", "volume": 150, "avg_nodes": 10.9, "avg_e2e_days": 6.5, "blind_rate": 4.7, "no_comment_rate": 82.5, "sys_auto": 149, "priority": 977.0 }, { "name": "招聘需求审批", "volume": 39, "avg_nodes": 6.0, "avg_e2e_days": 3.9, "blind_rate": 7.8, "no_comment_rate": 62.7, "sys_auto": 1, "priority": 152.0 }, { "name": "Offer审批", "volume": 38, "avg_nodes": 5.4, "avg_e2e_days": 2.9, "blind_rate": 5.0, "no_comment_rate": 95.6, "sys_auto": 7, "priority": 112.0 }, { "name": "印章使用申请（新）2.0", "volume": 170, "avg_nodes": 7.2, "avg_e2e_days": 1.7, "blind_rate": 7.8, "no_comment_rate": 83.4, "sys_auto": 32, "priority": 284.0 }, { "name": "印章证照（新）", "volume": 181, "avg_nodes": 7.1, "avg_e2e_days": 1.4, "blind_rate": 10.6, "no_comment_rate": 99.6, "sys_auto": 187, "priority": 251.0 }, { "name": "内部领用申请", "volume": 278, "avg_nodes": 7.0, "avg_e2e_days": 1.3, "blind_rate": 11.7, "no_comment_rate": 95.6, "sys_auto": 398, "priority": 367.0 }, { "name": "小米集团-公司法定代表人/股东等人的资料/签章（字）/实名验证申请", "volume": 99, "avg_nodes": 7.0, "avg_e2e_days": 1.2, "blind_rate": 8.8, "no_comment_rate": 96.7, "sys_auto": 83, "priority": 120.0 }, { "name": "集团部门费预算申请流程", "volume": 254, "avg_nodes": 9.2, "avg_e2e_days": 1.1, "blind_rate": 5.4, "no_comment_rate": 49.9, "sys_auto": 344, "priority": 273.0 }];
+    new Chart(document.getElementById('chartDuration'), {
+      type: 'bar',
+      data: {
+        labels: durData.map(d => d.name.substring(0, 15)),
+        datasets: [{
+          label: '平均耗时(天)',
+          data: durData.map(d => d.avg_e2e_days),
+          backgroundColor: durData.map(d => d.avg_e2e_days > 10 ? '#ea4335' : (d.avg_e2e_days > 5 ? '#fbbc04' : '#34a853'))
+        }]
+      },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    // Chart 4: Node Volume
+    var nodeData = [{ "name": "业务审批", "count": 2687, "blind": 121, "no_comment": 2466, "blind_rate": 4.5, "no_comment_rate": 91.8, "avg_hours": 16.1, "med_hours": 2.7, "people": 121, "sys_auto": 0 }, { "name": "财务BP", "count": 1957, "blind": 44, "no_comment": 1176, "blind_rate": 2.2, "no_comment_rate": 60.1, "avg_hours": 26.3, "med_hours": 4.2, "people": 29, "sys_auto": 16 }, { "name": "部门审批", "count": 1014, "blind": 97, "no_comment": 986, "blind_rate": 9.6, "no_comment_rate": 97.2, "avg_hours": 12.4, "med_hours": 1.5, "people": 105, "sys_auto": 25 }, { "name": "财务初审", "count": 887, "blind": 22, "no_comment": 771, "blind_rate": 2.5, "no_comment_rate": 86.9, "avg_hours": 22.5, "med_hours": 7.1, "people": 15, "sys_auto": 0 }, { "name": "部门负责人", "count": 818, "blind": 98, "no_comment": 781, "blind_rate": 12.0, "no_comment_rate": 95.5, "avg_hours": 9.4, "med_hours": 1.1, "people": 79, "sys_auto": 54 }, { "name": "部门领导", "count": 761, "blind": 60, "no_comment": 685, "blind_rate": 7.9, "no_comment_rate": 90.0, "avg_hours": 5.7, "med_hours": 0.7, "people": 75, "sys_auto": 94 }, { "name": "财务复审", "count": 736, "blind": 20, "no_comment": 629, "blind_rate": 2.7, "no_comment_rate": 85.5, "avg_hours": 5.1, "med_hours": 2.1, "people": 8, "sys_auto": 1 }, { "name": "管理层审批", "count": 589, "blind": 3, "no_comment": 588, "blind_rate": 0.5, "no_comment_rate": 99.8, "avg_hours": 13.0, "med_hours": 5.5, "people": 2, "sys_auto": 0 }, { "name": "商务领导", "count": 571, "blind": 38, "no_comment": 556, "blind_rate": 6.7, "no_comment_rate": 97.4, "avg_hours": 25.2, "med_hours": 2.4, "people": 21, "sys_auto": 0 }, { "name": "业务部门领导审批", "count": 550, "blind": 58, "no_comment": 395, "blind_rate": 10.5, "no_comment_rate": 71.8, "avg_hours": 12.7, "med_hours": 0.1, "people": 70, "sys_auto": 12 }, { "name": "法务审核", "count": 532, "blind": 16, "no_comment": 518, "blind_rate": 3.0, "no_comment_rate": 97.4, "avg_hours": 32.1, "med_hours": 11.0, "people": 12, "sys_auto": 1 }, { "name": "相关领导审批", "count": 497, "blind": 33, "no_comment": 474, "blind_rate": 6.6, "no_comment_rate": 95.4, "avg_hours": 30.6, "med_hours": 4.8, "people": 93, "sys_auto": 0 }, { "name": "印控中心审批", "count": 475, "blind": 0, "no_comment": 443, "blind_rate": 0.0, "no_comment_rate": 93.3, "avg_hours": 85.6, "med_hours": 55.2, "people": 7, "sys_auto": 0 }, { "name": "业务初审", "count": 439, "blind": 7, "no_comment": 15, "blind_rate": 1.6, "no_comment_rate": 3.4, "avg_hours": 0.1, "med_hours": 0.0, "people": 8, "sys_auto": 0 }, { "name": "业务终审", "count": 433, "blind": 5, "no_comment": 433, "blind_rate": 1.2, "no_comment_rate": 100.0, "avg_hours": 12.9, "med_hours": 4.7, "people": 1, "sys_auto": 0 }, { "name": "需求人确认", "count": 422, "blind": 73, "no_comment": 400, "blind_rate": 17.3, "no_comment_rate": 94.8, "avg_hours": 11.0, "med_hours": 0.2, "people": 97, "sys_auto": 8 }, { "name": "综管审批", "count": 396, "blind": 12, "no_comment": 262, "blind_rate": 3.0, "no_comment_rate": 66.2, "avg_hours": 12.3, "med_hours": 1.8, "people": 9, "sys_auto": 12 }, { "name": "业务部门领导", "count": 334, "blind": 5, "no_comment": 216, "blind_rate": 1.5, "no_comment_rate": 64.7, "avg_hours": 10.8, "med_hours": 1.1, "people": 10, "sys_auto": 5 }, { "name": "商务部门领导", "count": 326, "blind": 2, "no_comment": 326, "blind_rate": 0.6, "no_comment_rate": 100.0, "avg_hours": 27.1, "med_hours": 14.3, "people": 1, "sys_auto": 8 }, { "name": "部门领导审批", "count": 324, "blind": 41, "no_comment": 314, "blind_rate": 12.7, "no_comment_rate": 96.9, "avg_hours": 4.9, "med_hours": 0.4, "people": 32, "sys_auto": 10 }];
+    new Chart(document.getElementById('chartNodeVolume'), {
+      type: 'bar',
+      data: {
+        labels: nodeData.map(d => d.name),
+        datasets: [
+          { label: '正常审批', data: nodeData.map(d => d.count - d.blind - d.sys_auto), backgroundColor: '#34a853', stack: 's' },
+          { label: '盲批', data: nodeData.map(d => d.blind), backgroundColor: '#ea4335', stack: 's' },
+          { label: '系统自动', data: nodeData.map(d => d.sys_auto), backgroundColor: '#dadce0', stack: 's' }
+        ]
+      },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'top' } } }
+    });
+
+    // Chart 5: Node Value scatter
+    var nvData = [{ "name": "申请人", "total": 312, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 100.0, "value_score": 0.0, "avg_hours": 0.0 }, { "name": "相关领导", "total": 156, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 22.4, "value_score": 15.5, "avg_hours": 4.3 }, { "name": "直属主管", "total": 316, "comment_rate": 0.6, "reject_rate": 0.0, "blind_rate": 22.8, "value_score": 15.7, "avg_hours": 3.1 }, { "name": "业务线领导", "total": 61, "comment_rate": 1.6, "reject_rate": 0.0, "blind_rate": 24.6, "value_score": 15.7, "avg_hours": 5.6 }, { "name": "HRBP", "total": 29, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 20.7, "value_score": 15.9, "avg_hours": 26.8 }, { "name": "直属leader", "total": 258, "comment_rate": 2.3, "reject_rate": 0.8, "blind_rate": 26.0, "value_score": 16.0, "avg_hours": 3.0 }, { "name": "全国渠道负责人", "total": 26, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 19.2, "value_score": 16.2, "avg_hours": 0.2 }, { "name": "工作交接人", "total": 29, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 17.2, "value_score": 16.6, "avg_hours": 3.8 }, { "name": "财务BP审核", "total": 22, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 13.6, "value_score": 17.3, "avg_hours": 5.2 }, { "name": "印控中心审批水印", "total": 22, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 13.6, "value_score": 17.3, "avg_hours": 2.9 }, { "name": "业务第一层审批", "total": 42, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 11.9, "value_score": 17.6, "avg_hours": 1.7 }, { "name": "部门领导审批", "total": 317, "comment_rate": 0.9, "reject_rate": 0.3, "blind_rate": 12.9, "value_score": 17.9, "avg_hours": 5.0 }, { "name": "业务部门领导审批", "total": 405, "comment_rate": 2.5, "reject_rate": 0.0, "blind_rate": 14.3, "value_score": 18.1, "avg_hours": 17.3 }, { "name": "领导审批", "total": 129, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 9.3, "value_score": 18.1, "avg_hours": 7.3 }, { "name": "印控中心", "total": 180, "comment_rate": 0.6, "reject_rate": 0.0, "blind_rate": 10.0, "value_score": 18.2, "avg_hours": 0.8 }, { "name": "一级审批人", "total": 24, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 8.3, "value_score": 18.3, "avg_hours": 5.6 }, { "name": "财务", "total": 25, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 8.0, "value_score": 18.4, "avg_hours": 6.1 }, { "name": "需求人确认", "total": 422, "comment_rate": 5.2, "reject_rate": 0.0, "blind_rate": 17.3, "value_score": 18.6, "avg_hours": 11.0 }, { "name": "部门领导", "total": 693, "comment_rate": 1.2, "reject_rate": 0.0, "blind_rate": 8.7, "value_score": 18.7, "avg_hours": 6.3 }, { "name": "部门负责人", "total": 805, "comment_rate": 3.0, "reject_rate": 0.0, "blind_rate": 12.2, "value_score": 18.8, "avg_hours": 9.5 }, { "name": "二级部门负责人", "total": 154, "comment_rate": 1.3, "reject_rate": 0.0, "blind_rate": 8.4, "value_score": 18.8, "avg_hours": 8.2 }, { "name": "业务领导审批", "total": 54, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 5.6, "value_score": 18.9, "avg_hours": 7.5 }, { "name": "费用需求人部门二级及以下审批", "total": 282, "comment_rate": 1.4, "reject_rate": 0.0, "blind_rate": 8.2, "value_score": 18.9, "avg_hours": 9.7 }, { "name": "预算承担|会签|归口部门审批", "total": 61, "comment_rate": 1.6, "reject_rate": 1.6, "blind_rate": 11.5, "value_score": 19.0, "avg_hours": 3.7 }, { "name": "财务总监", "total": 230, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 4.8, "value_score": 19.0, "avg_hours": 3.4 }, { "name": "互部财务负责人", "total": 176, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 4.5, "value_score": 19.1, "avg_hours": 1.4 }, { "name": "商务领导", "total": 565, "comment_rate": 1.6, "reject_rate": 0.0, "blind_rate": 6.7, "value_score": 19.3, "avg_hours": 25.5 }, { "name": "主管审批", "total": 59, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 3.4, "value_score": 19.3, "avg_hours": 6.8 }, { "name": "费用需求部门二级部门负责人审批（国际、应用生态南京、商业营销除外）", "total": 36, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 2.8, "value_score": 19.4, "avg_hours": 5.3 }, { "name": "VP审批", "total": 37, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 2.7, "value_score": 19.5, "avg_hours": 9.7 }, { "name": "财务复审", "total": 631, "comment_rate": 0.3, "reject_rate": 0.0, "blind_rate": 3.2, "value_score": 19.5, "avg_hours": 6.0 }, { "name": "业务第二层审批", "total": 42, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 2.4, "value_score": 19.5, "avg_hours": 20.4 }, { "name": "一级部门负责人", "total": 254, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 2.0, "value_score": 19.6, "avg_hours": 7.6 }, { "name": "财务VP", "total": 53, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 1.9, "value_score": 19.6, "avg_hours": 9.9 }, { "name": "部门审批", "total": 1021, "comment_rate": 3.3, "reject_rate": 0.7, "blind_rate": 9.5, "value_score": 19.7, "avg_hours": 12.8 }, { "name": "业务终审", "total": 433, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 1.2, "value_score": 19.8, "avg_hours": 12.9 }, { "name": "管理层", "total": 208, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 1.0, "value_score": 19.8, "avg_hours": 8.4 }, { "name": "互部总经理审批", "total": 108, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.9, "value_score": 19.8, "avg_hours": 8.4 }, { "name": "商务部门领导", "total": 326, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.6, "value_score": 19.9, "avg_hours": 27.1 }, { "name": "二级财务复审", "total": 191, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.5, "value_score": 19.9, "avg_hours": 6.3 }, { "name": "申请人二级部门负责人", "total": 219, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.5, "value_score": 19.9, "avg_hours": 11.8 }, { "name": "资产（行政、工程机等）", "total": 21, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 20.0, "avg_hours": 228.9 }, { "name": "结算操作", "total": 21, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 20.0, "avg_hours": 50.8 }, { "name": "一级部门负责人(明细超阈值)", "total": 31, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 20.0, "avg_hours": 10.9 }, { "name": "二级审批人", "total": 24, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 20.0, "avg_hours": 12.8 }, { "name": "采购执行人的二级部门负责人", "total": 58, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 20.0, "avg_hours": 21.6 }, { "name": "品牌委审核", "total": 63, "comment_rate": 1.6, "reject_rate": 0.0, "blind_rate": 3.2, "value_score": 20.0, "avg_hours": 3.3 }, { "name": "媒体审批", "total": 23, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 20.0, "avg_hours": 13.5 }, { "name": "领导", "total": 21, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 20.0, "avg_hours": 14.2 }, { "name": "一级部门负责人(预算超阈值)", "total": 59, "comment_rate": 0.0, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 20.0, "avg_hours": 10.2 }, { "name": "法务BP", "total": 99, "comment_rate": 9.1, "reject_rate": 0.0, "blind_rate": 17.2, "value_score": 20.2, "avg_hours": 11.3 }, { "name": "管理层审批", "total": 591, "comment_rate": 0.5, "reject_rate": 0.3, "blind_rate": 0.5, "value_score": 20.2, "avg_hours": 13.0 }, { "name": "定向采购执行人审批", "total": 59, "comment_rate": 8.5, "reject_rate": 0.0, "blind_rate": 15.3, "value_score": 20.3, "avg_hours": 7.9 }, { "name": "业务审核", "total": 33, "comment_rate": 3.0, "reject_rate": 3.0, "blind_rate": 9.1, "value_score": 20.6, "avg_hours": 4.8 }, { "name": "业务部门领导", "total": 222, "comment_rate": 2.7, "reject_rate": 0.0, "blind_rate": 2.3, "value_score": 20.6, "avg_hours": 16.3 }, { "name": "法务职能", "total": 245, "comment_rate": 2.4, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 21.0, "avg_hours": 11.2 }, { "name": "税务审批", "total": 65, "comment_rate": 3.1, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 21.2, "avg_hours": 135.2 }, { "name": "HRBP 负责人/集团招聘", "total": 31, "comment_rate": 6.5, "reject_rate": 0.0, "blind_rate": 6.5, "value_score": 21.3, "avg_hours": 17.5 }, { "name": "税务", "total": 28, "comment_rate": 3.6, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 21.4, "avg_hours": 14.7 }, { "name": "相关领导审批", "total": 503, "comment_rate": 5.8, "reject_rate": 1.4, "blind_rate": 6.6, "value_score": 21.6, "avg_hours": 30.2 }, { "name": "预算管理", "total": 260, "comment_rate": 6.9, "reject_rate": 0.0, "blind_rate": 4.6, "value_score": 21.8, "avg_hours": 1.2 }, { "name": "采购分配具体采购执行人", "total": 21, "comment_rate": 4.8, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 21.9, "avg_hours": 65.6 }, { "name": "互部综管负责人", "total": 149, "comment_rate": 6.7, "reject_rate": 0.0, "blind_rate": 2.7, "value_score": 22.1, "avg_hours": 5.7 }, { "name": "签字盖章审批", "total": 26, "comment_rate": 7.7, "reject_rate": 0.0, "blind_rate": 3.8, "value_score": 22.3, "avg_hours": 53.8 }, { "name": "业务审批", "total": 2689, "comment_rate": 8.3, "reject_rate": 0.1, "blind_rate": 4.5, "value_score": 22.4, "avg_hours": 16.1 }, { "name": "直属领导", "total": 174, "comment_rate": 14.9, "reject_rate": 0.0, "blind_rate": 16.1, "value_score": 22.8, "avg_hours": 3.4 }, { "name": "印控中心审批", "total": 476, "comment_rate": 6.9, "reject_rate": 0.2, "blind_rate": 0.0, "value_score": 22.9, "avg_hours": 85.5 }, { "name": "法务审核", "total": 549, "comment_rate": 5.6, "reject_rate": 3.1, "blind_rate": 2.9, "value_score": 22.9, "avg_hours": 31.1 }, { "name": "费用需求人部门三级及以下审批", "total": 77, "comment_rate": 13.0, "reject_rate": 1.3, "blind_rate": 10.4, "value_score": 23.6, "avg_hours": 45.6 }, { "name": "互部财务主管", "total": 243, "comment_rate": 12.8, "reject_rate": 0.0, "blind_rate": 4.5, "value_score": 24.2, "avg_hours": 5.3 }, { "name": "HRBP审批", "total": 33, "comment_rate": 12.1, "reject_rate": 0.0, "blind_rate": 3.0, "value_score": 24.2, "avg_hours": 70.1 }, { "name": "互部综管领导", "total": 205, "comment_rate": 10.7, "reject_rate": 1.5, "blind_rate": 2.0, "value_score": 24.5, "avg_hours": 12.4 }, { "name": "财务初审", "total": 889, "comment_rate": 13.3, "reject_rate": 0.2, "blind_rate": 2.5, "value_score": 24.9, "avg_hours": 22.5 }, { "name": "BPHead-1", "total": 23, "comment_rate": 13.0, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 25.2, "avg_hours": 34.9 }, { "name": "综管负责人审批", "total": 88, "comment_rate": 15.9, "reject_rate": 0.0, "blind_rate": 2.3, "value_score": 25.9, "avg_hours": 2.2 }, { "name": "管理小组", "total": 52, "comment_rate": 9.6, "reject_rate": 9.6, "blind_rate": 5.8, "value_score": 26.5, "avg_hours": 3.3 }, { "name": "财务审批", "total": 143, "comment_rate": 21.0, "reject_rate": 0.7, "blind_rate": 1.4, "value_score": 28.4, "avg_hours": 13.4 }, { "name": "集团品牌管理委员会", "total": 30, "comment_rate": 23.3, "reject_rate": 0.0, "blind_rate": 3.3, "value_score": 28.7, "avg_hours": 27.3 }, { "name": "媒体负责人审批（投放类市场费专用）", "total": 20, "comment_rate": 20.0, "reject_rate": 10.0, "blind_rate": 10.0, "value_score": 30.0, "avg_hours": 7.3 }, { "name": "采购执行人审批", "total": 23, "comment_rate": 21.7, "reject_rate": 8.7, "blind_rate": 8.7, "value_score": 30.4, "avg_hours": 10.2 }, { "name": "初步审核", "total": 24, "comment_rate": 25.0, "reject_rate": 8.3, "blind_rate": 8.3, "value_score": 31.7, "avg_hours": 15.8 }, { "name": "相关审批人", "total": 217, "comment_rate": 35.0, "reject_rate": 0.0, "blind_rate": 7.4, "value_score": 32.5, "avg_hours": 19.4 }, { "name": "综管审批", "total": 412, "comment_rate": 36.4, "reject_rate": 3.9, "blind_rate": 2.9, "value_score": 35.5, "avg_hours": 13.2 }, { "name": "财务BP", "total": 1967, "comment_rate": 40.2, "reject_rate": 0.5, "blind_rate": 2.2, "value_score": 35.8, "avg_hours": 26.9 }, { "name": "设计审核", "total": 49, "comment_rate": 36.7, "reject_rate": 14.3, "blind_rate": 2.0, "value_score": 40.0, "avg_hours": 22.5 }, { "name": "财务BP审批", "total": 352, "comment_rate": 63.9, "reject_rate": 8.8, "blind_rate": 0.3, "value_score": 49.0, "avg_hours": 31.9 }, { "name": "资源管理组审批", "total": 33, "comment_rate": 100.0, "reject_rate": 0.0, "blind_rate": 0.0, "value_score": 60.0, "avg_hours": 7.3 }];
+    new Chart(document.getElementById('chartNodeValue'), {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: '节点',
+          data: nvData.map(d => ({ x: d.comment_rate, y: d.blind_rate, r: Math.max(3, Math.sqrt(d.total) * 1.5), name: d.name })),
+          backgroundColor: nvData.map(d => d.value_score < 18 ? 'rgba(234,67,53,0.6)' : (d.value_score < 22 ? 'rgba(251,188,4,0.6)' : 'rgba(52,168,83,0.6)')),
+          pointRadius: nvData.map(d => Math.max(4, Math.sqrt(d.total) * 1.2))
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { x: { title: { display: true, text: '意见率 (%)' } }, y: { title: { display: true, text: '盲批率 (%)' } } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function (ctx) { var d = nvData[ctx.dataIndex]; return d.name + ': 意见率' + d.comment_rate + '%, 盲批率' + d.blind_rate + '%, n=' + d.total; } } }
+        }
+      }
+    });
+
+    // Chart 6: Auto skip
+    var autoData = [{ "name": "资产领用人审批", "count": 269 }, { "name": "预算承担|会签|归口部门审批", "count": 203 }, { "name": "相关领导", "count": 167 }, { "name": "部门领导", "count": 94 }, { "name": "审批节点", "count": 65 }, { "name": "一级部门负责人(明细超阈值)", "count": 60 }, { "name": "部门负责人", "count": 54 }, { "name": "采购执行人的二级部门负责人", "count": 49 }, { "name": "定向采购执行人审批", "count": 48 }, { "name": "一级部门负责人(预算超阈值)", "count": 46 }, { "name": "相关审批人", "count": 41 }, { "name": "互部总经理审批", "count": 41 }, { "name": "申请人二级部门负责人", "count": 35 }, { "name": "部门审批", "count": 25 }, { "name": "一级部门负责人", "count": 22 }];
+    new Chart(document.getElementById('chartAutoSkip'), {
+      type: 'bar',
+      data: {
+        labels: autoData.map(d => d.name.substring(0, 18)),
+        datasets: [{ label: '自动跳过次数', data: autoData.map(d => d.count), backgroundColor: '#7baaf7' }]
+      },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    // Chart 7: Person-Role top 20
+    var prData = [{ "person": "Chan Liu 刘婵", "role": "管理层审批", "count": 588, "blind": 3, "no_comment": 587, "blind_rate": 0.5, "no_comment_rate": 99.8, "avg_hours": 13.0, "avg_min": 780.8 }, { "person": "Chan Liu 刘婵", "role": "业务终审", "count": 433, "blind": 5, "no_comment": 433, "blind_rate": 1.2, "no_comment_rate": 100.0, "avg_hours": 12.9, "avg_min": 775.2 }, { "person": "高玉", "role": "财务BP", "count": 417, "blind": 18, "no_comment": 417, "blind_rate": 4.3, "no_comment_rate": 100.0, "avg_hours": 1.7, "avg_min": 101.6 }, { "person": "谷雨", "role": "财务复审", "count": 412, "blind": 19, "no_comment": 412, "blind_rate": 4.6, "no_comment_rate": 100.0, "avg_hours": 5.8, "avg_min": 348.2 }, { "person": "Irene Chang 张庭芳", "role": "商务部门领导", "count": 326, "blind": 2, "no_comment": 326, "blind_rate": 0.6, "no_comment_rate": 100.0, "avg_hours": 27.1, "avg_min": 1624.8 }, { "person": "Ian Zhao 赵炎杰", "role": "业务审批", "count": 298, "blind": 3, "no_comment": 298, "blind_rate": 1.0, "no_comment_rate": 100.0, "avg_hours": 1.6, "avg_min": 97.4 }, { "person": "Chan Liu 刘婵", "role": "部门负责人", "count": 286, "blind": 18, "no_comment": 286, "blind_rate": 6.3, "no_comment_rate": 100.0, "avg_hours": 12.1, "avg_min": 728.4 }, { "person": "陈洁实", "role": "财务初审", "count": 246, "blind": 2, "no_comment": 246, "blind_rate": 0.8, "no_comment_rate": 100.0, "avg_hours": 13.5, "avg_min": 811.3 }, { "person": "Chan Liu 刘婵", "role": "一级部门负责人", "count": 239, "blind": 5, "no_comment": 239, "blind_rate": 2.1, "no_comment_rate": 100.0, "avg_hours": 6.8, "avg_min": 407.1 }, { "person": "Cindy Lee 李昕玥", "role": "商务领导", "count": 216, "blind": 4, "no_comment": 215, "blind_rate": 1.9, "no_comment_rate": 99.5, "avg_hours": 17.8, "avg_min": 1066.2 }, { "person": "Chan Liu 刘婵", "role": "部门审批", "count": 202, "blind": 1, "no_comment": 202, "blind_rate": 0.5, "no_comment_rate": 100.0, "avg_hours": 13.3, "avg_min": 795.8 }, { "person": "Qiang Song 宋强", "role": "业务审批", "count": 193, "blind": 5, "no_comment": 193, "blind_rate": 2.6, "no_comment_rate": 100.0, "avg_hours": 6.6, "avg_min": 398.4 }, { "person": "冯静", "role": "财务初审", "count": 187, "blind": 0, "no_comment": 187, "blind_rate": 0.0, "no_comment_rate": 100.0, "avg_hours": 35.0, "avg_min": 2098.4 }, { "person": "朱敏", "role": "财务复审", "count": 177, "blind": 0, "no_comment": 177, "blind_rate": 0.0, "no_comment_rate": 100.0, "avg_hours": 6.5, "avg_min": 389.0 }, { "person": "高玉", "role": "互部财务负责人", "count": 176, "blind": 8, "no_comment": 176, "blind_rate": 4.5, "no_comment_rate": 100.0, "avg_hours": 1.4, "avg_min": 85.4 }, { "person": "孟艳利", "role": "财务BP", "count": 174, "blind": 8, "no_comment": 174, "blind_rate": 4.6, "no_comment_rate": 100.0, "avg_hours": 13.0, "avg_min": 780.0 }, { "person": "Chan Liu 刘婵", "role": "管理层", "count": 170, "blind": 2, "no_comment": 170, "blind_rate": 1.2, "no_comment_rate": 100.0, "avg_hours": 8.3, "avg_min": 496.7 }, { "person": "孙思", "role": "财务BP", "count": 160, "blind": 14, "no_comment": 160, "blind_rate": 8.8, "no_comment_rate": 100.0, "avg_hours": 7.5, "avg_min": 451.7 }, { "person": "孙家慧", "role": "法务审核", "count": 165, "blind": 6, "no_comment": 160, "blind_rate": 3.6, "no_comment_rate": 97.0, "avg_hours": 17.6, "avg_min": 1055.2 }, { "person": "李丹", "role": "财务初审", "count": 153, "blind": 18, "no_comment": 153, "blind_rate": 11.8, "no_comment_rate": 100.0, "avg_hours": 5.2, "avg_min": 310.6 }];
+    new Chart(document.getElementById('chartPersonRole'), {
+      type: 'bar',
+      data: {
+        labels: prData.map(d => d.person.substring(0, 12) + ' · ' + d.role),
+        datasets: [{ label: '审批次数', data: prData.map(d => d.count), backgroundColor: prData.map((d, i) => colors[i % colors.length]) }]
+      },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    // Chart 8: Blind person
+    var bpData = [{ "name": "Xiang8 Li 李享", "blind": 82, "total": 262, "rate": 31.3 }, { "name": "陈高铭", "blind": 53, "total": 472, "rate": 11.2 }, { "name": "Chan Liu 刘婵", "blind": 47, "total": 3201, "rate": 1.5 }, { "name": "高玉", "blind": 37, "total": 781, "rate": 4.7 }, { "name": "吴静菡", "blind": 33, "total": 49, "rate": 67.3 }, { "name": "朱珠", "blind": 32, "total": 193, "rate": 16.6 }, { "name": "高晰然", "blind": 31, "total": 45, "rate": 68.9 }, { "name": "Lawrence.S", "blind": 29, "total": 114, "rate": 25.4 }, { "name": "朱红锦", "blind": 26, "total": 149, "rate": 17.4 }, { "name": "Irene Chang 张庭芳", "blind": 22, "total": 826, "rate": 2.7 }, { "name": "Frank Yin 尹鹏轩", "blind": 22, "total": 345, "rate": 6.4 }, { "name": "Ian Zhao 赵炎杰", "blind": 21, "total": 772, "rate": 2.7 }, { "name": "Lixin1 Wang 王利欣", "blind": 20, "total": 50, "rate": 40.0 }, { "name": "Qiang Song 宋强", "blind": 19, "total": 606, "rate": 3.1 }, { "name": "Xueqing Huang 黄学青", "blind": 19, "total": 91, "rate": 20.9 }];
+    new Chart(document.getElementById('chartBlindPerson'), {
+      type: 'bar',
+      data: {
+        labels: bpData.map(d => d.name.substring(0, 15)),
+        datasets: [
+          { label: '盲批次数', data: bpData.map(d => d.blind), backgroundColor: '#ea4335' },
+          { label: '总审批', data: bpData.map(d => d.total - d.blind), backgroundColor: '#e8eaed' }
+        ]
+      },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+    });
+  </script>
+</body>
+
+</html>
